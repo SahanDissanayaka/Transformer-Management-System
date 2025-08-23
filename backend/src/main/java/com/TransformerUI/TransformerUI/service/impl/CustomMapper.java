@@ -81,6 +81,7 @@ public class CustomMapper {
                     .type(imageRequest.getType())
                     .transformerNo(imageRequest.getTransformerNo())
                     .inspectionNo(imageRequest.getInspectionNo())
+                    .environmentalCondition(imageRequest.getEnvironmentalCondition())
                     .image(imageRequest.getPhoto().getBytes())
                     .build();
         } catch (IOException e) {
@@ -97,6 +98,9 @@ public class CustomMapper {
         }
         if (imageRequest.getInspectionNo() != null) {
             existingEntity.setInspectionNo(imageRequest.getInspectionNo());
+        }
+        if (imageRequest.getEnvironmentalCondition() != null){
+            existingEntity.setEnvironmentalCondition(imageRequest.getEnvironmentalCondition());
         }
         if (imageRequest.getPhoto() != null && !imageRequest.getPhoto().isEmpty()) {
             try {
@@ -119,6 +123,7 @@ public class CustomMapper {
                 entity.getTransformerNo(),
                 entity.getInspectionNo(),
                 entity.getType(),
+                entity.getEnvironmentalCondition(),
                 photoBase64
         );
     }
