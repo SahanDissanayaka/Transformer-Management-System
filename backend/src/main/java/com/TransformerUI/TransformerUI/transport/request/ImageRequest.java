@@ -12,5 +12,6 @@ public class ImageRequest {
     private String transformerNo;
     private String inspectionNo;
     private String type;
+    private String environmentalCondition;
     private MultipartFile photo;
 }
