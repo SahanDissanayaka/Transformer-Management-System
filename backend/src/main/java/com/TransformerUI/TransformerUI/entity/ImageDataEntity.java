@@ -24,5 +24,8 @@ public class ImageDataEntity {
     @Column(name = "inspectionno")
     private String inspectionNo;
 
+    @Column(name = "environmentalcondition")
+    private String environmentalCondition;
+
     private byte[] image;
 }
