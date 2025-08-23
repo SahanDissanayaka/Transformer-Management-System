@@ -12,5 +12,6 @@ public class ImageResponse {
     private String transformerNo;
     private String inspectionNo;
     private String type;
+    private String environmentalCondition;
     private String photoBase64;
 }
