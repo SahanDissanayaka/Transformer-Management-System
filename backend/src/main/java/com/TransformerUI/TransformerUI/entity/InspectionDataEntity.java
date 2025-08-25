@@ -24,6 +24,8 @@ public class InspectionDataEntity {
 
     private String branch;
 
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "inspectiondata_seq")
+    @SequenceGenerator(name = "inspectiondata_seq", sequenceName = "inspectiondata_seq", allocationSize = 1)
     @Column(name = "inspectionno")
     private String inspectionNo;
 
