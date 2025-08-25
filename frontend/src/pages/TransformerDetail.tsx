@@ -11,7 +11,7 @@ export default function TransformerDetailPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editInspection, setEditInspection] = useState(null);
   const ITEMS_PER_PAGE = 10;
-  const offset = (currentPage - 1);
+  const offset = currentPage - 1;
 
   const {
     data: inspections,
@@ -20,7 +20,8 @@ export default function TransformerDetailPage() {
     creating,
   } = useInspections(transformerNo, offset, ITEMS_PER_PAGE);
 
-  const totalPages = inspections?.length < ITEMS_PER_PAGE ? currentPage : currentPage + 1;
+  const totalPages =
+    inspections?.length < ITEMS_PER_PAGE ? currentPage : currentPage + 1;
 
   const handleEdit = (inspection: any) => {
     setEditInspection(inspection);
@@ -28,7 +29,8 @@ export default function TransformerDetailPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this inspection?")) return;
+    if (!window.confirm("Are you sure you want to delete this inspection?"))
+      return;
 
     try {
       await deleteInspection(id);
@@ -40,16 +42,25 @@ export default function TransformerDetailPage() {
     }
   };
 
-  const handleView = (inspection: any) => {
-    alert(JSON.stringify(inspection, null, 2));
-  };
+ const handleView = (inspection: any) => {
+  navigate(`/transformers/${transformerNo}/inspections/${inspection.inspectionNo}`, {
+    state: { inspection },
+  });
+};
+
 
   return (
     <div className="container">
-      <button className="btn secondary" onClick={() => navigate("/transformers")}>← Back to Transformers</button>
+      <button
+        className="btn secondary"
+        onClick={() => navigate("/transformers")}
+      >
+        ← Back to Transformers
+      </button>
 
       <h2 style={{ marginTop: 16 }}>
-        Inspections for Transformer <span className="badge">{transformerNo}</span>
+        Inspections for Transformer{" "}
+        <span className="badge">{transformerNo}</span>
       </h2>
 
       <button
@@ -102,11 +113,28 @@ export default function TransformerDetailPage() {
                 <td>{insp.branch}</td>
                 <td>{insp.inspectedDate}</td>
                 <td>{insp.maintenanceDate || "-"}</td>
-                <td><span className="badge">{insp.status}</span></td>
                 <td>
-                  <button className="btn small" onClick={() => handleEdit(insp)}>Edit</button>
-                  <button className="btn small danger" onClick={() => handleDelete(insp.id)}>Delete</button>
-                  <button className="btn small" onClick={() => handleView(insp)}>View</button>
+                  <span className="badge">{insp.status}</span>
+                </td>
+                <td>
+                  <button
+                    className="btn small"
+                    onClick={() => handleEdit(insp)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="btn small danger"
+                    onClick={() => handleDelete(insp.id)}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    className="btn small"
+                    onClick={() => handleView(insp)}
+                  >
+                    View
+                  </button>
                 </td>
               </tr>
             ))}
@@ -121,7 +149,10 @@ export default function TransformerDetailPage() {
             <button
               key={page}
               className="btn secondary"
-              style={{ margin: "0 5px", background: currentPage === page ? "white" : undefined }}
+              style={{
+                margin: "0 5px",
+                background: currentPage === page ? "white" : undefined,
+              }}
               onClick={() => setCurrentPage(page)}
             >
               {page}

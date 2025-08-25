@@ -5,6 +5,7 @@ import UploadImagesPage from "./pages/UploadImages";
 import BaselineGalleryPage from "./pages/BaseLineGallery";
 import TransformerDetailPage from "./pages/TransformerDetail"; // ✅ Add this import
 import App from "./App";
+import InspectionDetailPage from "./pages/InspectionDetailPage";
 
 export const router = createBrowserRouter([
   {
@@ -15,7 +16,8 @@ export const router = createBrowserRouter([
       { path: "transformers", element: <TransformersPage /> },
       { path: "upload", element: <UploadImagesPage /> },
       { path: "baseline", element: <BaselineGalleryPage /> },
-      { path: "transformers/:transformerNo", element: <TransformerDetailPage /> }, // ✅ New route
+      { path: "transformers/:transformerNo", element: <TransformerDetailPage /> },
+      { path: "transformers/:transformerNo/inspections/:inspectionNo", element: <InspectionDetailPage /> },
     ],
   },
 ]);
