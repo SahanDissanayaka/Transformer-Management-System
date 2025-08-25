@@ -18,14 +18,13 @@ import java.util.Date;
 public class InspectionDataEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "inspectiondata_id_seq")
-    @SequenceGenerator(name = "inspectiondata_id_seq", sequenceName = "inspectiondata_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "inspectiondata_seq")
+    @SequenceGenerator(name = "inspectiondata_seq", sequenceName = "inspectiondata_seq", allocationSize = 1)
     private Long id;
 
     private String branch;
 
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "inspectiondata_seq")
-    @SequenceGenerator(name = "inspectiondata_seq", sequenceName = "inspectiondata_seq", allocationSize = 1)
+
     @Column(name = "inspectionno")
     private String inspectionNo;
 

@@ -1,5 +1,5 @@
 server:
-  port: 5502
+  port: 8080
 
 base-url:
   context: /transformer-thermal-inspection
@@ -17,7 +17,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/postgres
     username: postgres
-    password: dI82@#lA
+    password: spdsmc123
     driver-class-name: org.postgresql.Driver
 
   jpa:
