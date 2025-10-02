@@ -13,8 +13,7 @@ public class ImageResponse {
     private String inspectionNo;
     private String type;
     private String weather;
-    private String boundingBoxesJson;
-    private String errorType;
+    private AnomaliesResponse anomaliesResponse;
     private String dateTime;
     private String photoBase64;
 }

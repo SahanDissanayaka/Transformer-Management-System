@@ -1,5 +1,6 @@
 package com.TransformerUI.TransformerUI.entity;
 
+import com.TransformerUI.TransformerUI.transport.response.AnomaliesResponse;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,12 +32,6 @@ public class ImageDataEntity {
     @Column(name = "weather")
     private String weather;
 
-    @Column(name = "boundingboxes")
-    private String boundingBoxesJson;
-
-    @Column(name = "errortype")
-    private String errorType;
-
     @Builder.Default
     private String uploader =  "System";
 
@@ -44,4 +39,10 @@ public class ImageDataEntity {
     private String dateTime = new SimpleDateFormat("EEE(dd), MMM, yyyy hh:mm a").format(new Date());
 
     private byte[] image;
+
+    @Column(columnDefinition = "TEXT")
+    private String detectionJson;
 }
+
+
+

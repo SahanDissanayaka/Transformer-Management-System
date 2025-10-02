@@ -5,7 +5,10 @@ import com.TransformerUI.TransformerUI.entity.InspectionDataEntity;
 import com.TransformerUI.TransformerUI.service.util.SequenceGeneratorService;
 import com.TransformerUI.TransformerUI.transport.request.ImageRequest;
 import com.TransformerUI.TransformerUI.transport.request.InspectionDataRequest;
+import com.TransformerUI.TransformerUI.transport.response.AnomaliesResponse;
+import com.TransformerUI.TransformerUI.transport.response.Anomaly;
 import com.TransformerUI.TransformerUI.transport.response.ImageResponse;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
@@ -72,41 +75,31 @@ public class CustomMapper {
 
     public ImageDataEntity toEntity(ImageRequest imageRequest) {
         try {
-            // Prepare builder
-            ImageDataEntity.ImageDataEntityBuilder builder = ImageDataEntity.builder()
+            byte[] imageBytes = imageRequest.getPhoto().getBytes();
+            String detectionJson;
+
+            if (Objects.equals(imageRequest.getType(), "Thermal")) {
+                // Run Python YOLO and get structured anomalies
+                AnomaliesResponse anomaliesResponse = PythonYOLO.runYOLO(imageBytes);
+
+                // Convert back to JSON string for DB storage
+                ObjectMapper mapper = new ObjectMapper();
+                detectionJson = mapper.writeValueAsString(anomaliesResponse.getAnomalies());
+            } else {
+                detectionJson = "";
+            }
+
+            return ImageDataEntity.builder()
                     .type(imageRequest.getType())
                     .transformerNo(imageRequest.getTransformerNo())
                     .inspectionNo(imageRequest.getInspectionNo())
                     .weather(imageRequest.getWeather())
-                    .image(imageRequest.getPhoto().getBytes());
+                    .image(imageBytes)
+                    .detectionJson(detectionJson)
+                    .build();
 
-            // If Thermal image, add random bounding boxes + error type
-            if (Objects.equals(imageRequest.getType(), "Thermal")) {
-                Random random = new Random();
-                List<int[]> boundingBoxes = new ArrayList<>();
-
-                // Example: create 2 random bounding boxes [x1,y1,x2,y2]
-                for (int i = 0; i < 2; i++) {
-                    int x1 = random.nextInt(100);
-                    int y1 = random.nextInt(100);
-                    int x2 = x1 + random.nextInt(50);
-                    int y2 = y1 + random.nextInt(50);
-                    boundingBoxes.add(new int[]{x1, y1, x2, y2});
-                }
-
-                // Convert to JSON string
-                ObjectMapper objectMapper = new ObjectMapper();
-                String boundingBoxesJson = objectMapper.writeValueAsString(boundingBoxes);
-
-                // Set into builder
-                builder.boundingBoxesJson(boundingBoxesJson);
-                builder.errorType("Thermal hotspot anomaly");
-            }
-
-            return builder.build();
-
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read image bytes", e);
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Failed to process image with YOLO", e);
         }
     }
 
@@ -137,17 +130,33 @@ public class CustomMapper {
         if (entity.getImage() != null && entity.getImage().length > 0) {
             photoBase64 = Base64.getEncoder().encodeToString(entity.getImage());
         }
+
+        AnomaliesResponse anomaliesResponse = null;
+        if (entity.getDetectionJson() != null && !entity.getDetectionJson().isEmpty()) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                List<Anomaly> anomalies = mapper.readValue(
+                        entity.getDetectionJson(),
+                        new TypeReference<List<Anomaly>>() {}
+                );
+                anomaliesResponse = new AnomaliesResponse(anomalies);
+            } catch (Exception e) {
+                // log error but don't break response
+                anomaliesResponse = null;
+            }
+        }
+
         return new ImageResponse(
                 entity.getId(),
                 entity.getTransformerNo(),
                 entity.getInspectionNo(),
                 entity.getType(),
                 entity.getWeather(),
-                entity.getBoundingBoxesJson(),
-                entity.getErrorType(),
+                anomaliesResponse,
                 entity.getDateTime(),
                 photoBase64
         );
     }
+
 
 }
