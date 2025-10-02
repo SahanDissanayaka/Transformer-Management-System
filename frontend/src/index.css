@@ -1,17 +1,172 @@
-:root { --bg: #0b1220; --card: #111a2b; --muted: #9fb0ca; --text: #e5ecf5; --accent: #6aa1ff; }
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; }
-body { margin: 0; font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
-a { color: var(--accent); text-decoration: none; }
-.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
-.card { background: var(--card); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px; box-shadow: 0 2px 20px rgba(0,0,0,0.2); }
-.input, select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: #0e1727; color: var(--text); }
-.label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display:block; }
-.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.btn { background: var(--accent); color: #061022; border: none; padding: 10px 16px; border-radius: 12px; cursor: pointer; font-weight: 600; }
-.btn.secondary { background: #23314d; color: var(--text); }
-.table { width: 100%; border-collapse: collapse; }
-.table th, .table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left; }
-.badge { display:inline-block; padding:4px 8px; border-radius:999px; background:#23314d; color:var(--text); font-size:12px; }
-.grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); }
-img.thumb { width:100%; height:160px; object-fit:cover; border-radius:12px; border:1px solid rgba(255,255,255,0.1); }
+:root {
+    --bg: #f0f2f5;       /* Light neutral background */
+    --card: rgba(255, 255, 255, 0.65); /* Glass effect */
+    --muted: #6b7280;    /* Soft gray */
+    --text: #111111;     /* Dark text */
+    --accent: #3b82f6;   /* Accent blue */
+}
+
+* {
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+html, body, #root {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    background-image: url('https://www.transparenttextures.com/patterns/asfalt-light.png'); /* subtle texture */
+}
+
+/* Links */
+a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Layout */
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+/* Card with glass effect */
+.card {
+    background: var(--card);
+    color: #000000;
+    padding: 20px;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Input fields */
+.input, select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: var(--text);
+}
+
+.input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.25);
+}
+
+/* Labels */
+.label {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: block;
+    font-weight: 500;
+}
+
+/* Grid */
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* Buttons */
+.btn {
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: all 0.25s ease;
+}
+
+.btn:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+.btn.secondary {
+    background: rgba(243, 244, 246, 0.6);
+    color: #333;
+}
+
+.btn.confirm, .btn.primary {
+    background: rgba(59, 130, 246, 0.85);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Table */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table th, .table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    text-align: left;
+}
+
+.table tr:hover {
+    background: rgba(59,130,246,0.08);
+}
+
+/* Badge */
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(243,244,246,0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: #333;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Grid layout for cards/images */
+.grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
+}
+
+/* Image thumbnails */
+img.thumb {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
