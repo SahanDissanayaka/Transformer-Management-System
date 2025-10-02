@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 @Builder
 @Data
@@ -29,6 +30,12 @@ public class ImageDataEntity {
 
     @Column(name = "weather")
     private String weather;
+
+    @Column(name = "boundingboxes")
+    private String boundingBoxesJson;
+
+    @Column(name = "errortype")
+    private String errorType;
 
     @Builder.Default
     private String uploader =  "System";

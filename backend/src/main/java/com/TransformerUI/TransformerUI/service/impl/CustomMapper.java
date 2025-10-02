@@ -6,12 +6,12 @@ import com.TransformerUI.TransformerUI.service.util.SequenceGeneratorService;
 import com.TransformerUI.TransformerUI.transport.request.ImageRequest;
 import com.TransformerUI.TransformerUI.transport.request.InspectionDataRequest;
 import com.TransformerUI.TransformerUI.transport.response.ImageResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Base64;
-import java.util.Date;
+import java.util.*;
 import java.io.IOException;
 
 @Component
@@ -70,20 +70,46 @@ public class CustomMapper {
         return null;
     }
 
-    // ===== ImageData mapping =====
     public ImageDataEntity toEntity(ImageRequest imageRequest) {
         try {
-            return ImageDataEntity.builder()
+            // Prepare builder
+            ImageDataEntity.ImageDataEntityBuilder builder = ImageDataEntity.builder()
                     .type(imageRequest.getType())
                     .transformerNo(imageRequest.getTransformerNo())
                     .inspectionNo(imageRequest.getInspectionNo())
                     .weather(imageRequest.getWeather())
-                    .image(imageRequest.getPhoto().getBytes())
-                    .build();
+                    .image(imageRequest.getPhoto().getBytes());
+
+            // If Thermal image, add random bounding boxes + error type
+            if (Objects.equals(imageRequest.getType(), "Thermal")) {
+                Random random = new Random();
+                List<int[]> boundingBoxes = new ArrayList<>();
+
+                // Example: create 2 random bounding boxes [x1,y1,x2,y2]
+                for (int i = 0; i < 2; i++) {
+                    int x1 = random.nextInt(100);
+                    int y1 = random.nextInt(100);
+                    int x2 = x1 + random.nextInt(50);
+                    int y2 = y1 + random.nextInt(50);
+                    boundingBoxes.add(new int[]{x1, y1, x2, y2});
+                }
+
+                // Convert to JSON string
+                ObjectMapper objectMapper = new ObjectMapper();
+                String boundingBoxesJson = objectMapper.writeValueAsString(boundingBoxes);
+
+                // Set into builder
+                builder.boundingBoxesJson(boundingBoxesJson);
+                builder.errorType("Thermal hotspot anomaly");
+            }
+
+            return builder.build();
+
         } catch (IOException e) {
             throw new RuntimeException("Failed to read image bytes", e);
         }
     }
+
 
     public void updateEntity(ImageDataEntity existingEntity, ImageRequest imageRequest) {
         if (imageRequest.getType() != null) {
@@ -117,6 +143,9 @@ public class CustomMapper {
                 entity.getInspectionNo(),
                 entity.getType(),
                 entity.getWeather(),
+                entity.getBoundingBoxesJson(),
+                entity.getErrorType(),
+                entity.getDateTime(),
                 photoBase64
         );
     }
