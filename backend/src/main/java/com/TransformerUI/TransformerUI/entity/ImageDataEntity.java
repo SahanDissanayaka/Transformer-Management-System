@@ -1,10 +1,12 @@
 package com.TransformerUI.TransformerUI.entity;
 
+import com.TransformerUI.TransformerUI.transport.response.AnomaliesResponse;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 @Builder
 @Data
@@ -37,4 +39,10 @@ public class ImageDataEntity {
     private String dateTime = new SimpleDateFormat("EEE(dd), MMM, yyyy hh:mm a").format(new Date());
 
     private byte[] image;
+
+    @Column(columnDefinition = "TEXT")
+    private String detectionJson;
 }
+
+
+

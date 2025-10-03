@@ -5,13 +5,16 @@ import com.TransformerUI.TransformerUI.entity.InspectionDataEntity;
 import com.TransformerUI.TransformerUI.service.util.SequenceGeneratorService;
 import com.TransformerUI.TransformerUI.transport.request.ImageRequest;
 import com.TransformerUI.TransformerUI.transport.request.InspectionDataRequest;
+import com.TransformerUI.TransformerUI.transport.response.AnomaliesResponse;
+import com.TransformerUI.TransformerUI.transport.response.Anomaly;
 import com.TransformerUI.TransformerUI.transport.response.ImageResponse;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Base64;
-import java.util.Date;
+import java.util.*;
 import java.io.IOException;
 
 @Component
@@ -70,20 +73,36 @@ public class CustomMapper {
         return null;
     }
 
-    // ===== ImageData mapping =====
     public ImageDataEntity toEntity(ImageRequest imageRequest) {
         try {
+            byte[] imageBytes = imageRequest.getPhoto().getBytes();
+            String detectionJson;
+
+            if (Objects.equals(imageRequest.getType(), "Thermal")) {
+                // Run Python YOLO and get structured anomalies
+                AnomaliesResponse anomaliesResponse = PythonYOLO.runYOLO(imageBytes);
+
+                // Convert back to JSON string for DB storage
+                ObjectMapper mapper = new ObjectMapper();
+                detectionJson = mapper.writeValueAsString(anomaliesResponse.getAnomalies());
+            } else {
+                detectionJson = "";
+            }
+
             return ImageDataEntity.builder()
                     .type(imageRequest.getType())
                     .transformerNo(imageRequest.getTransformerNo())
                     .inspectionNo(imageRequest.getInspectionNo())
                     .weather(imageRequest.getWeather())
-                    .image(imageRequest.getPhoto().getBytes())
+                    .image(imageBytes)
+                    .detectionJson(detectionJson)
                     .build();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read image bytes", e);
+
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Failed to process image with YOLO", e);
         }
     }
+
 
     public void updateEntity(ImageDataEntity existingEntity, ImageRequest imageRequest) {
         if (imageRequest.getType() != null) {
@@ -111,14 +130,33 @@ public class CustomMapper {
         if (entity.getImage() != null && entity.getImage().length > 0) {
             photoBase64 = Base64.getEncoder().encodeToString(entity.getImage());
         }
+
+        AnomaliesResponse anomaliesResponse = null;
+        if (entity.getDetectionJson() != null && !entity.getDetectionJson().isEmpty()) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                List<Anomaly> anomalies = mapper.readValue(
+                        entity.getDetectionJson(),
+                        new TypeReference<List<Anomaly>>() {}
+                );
+                anomaliesResponse = new AnomaliesResponse(anomalies);
+            } catch (Exception e) {
+                // log error but don't break response
+                anomaliesResponse = null;
+            }
+        }
+
         return new ImageResponse(
                 entity.getId(),
                 entity.getTransformerNo(),
                 entity.getInspectionNo(),
                 entity.getType(),
                 entity.getWeather(),
+                anomaliesResponse,
+                entity.getDateTime(),
                 photoBase64
         );
     }
+
 
 }

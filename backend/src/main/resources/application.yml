@@ -10,7 +10,7 @@ log:
 
 info:
   app:
-    name: base-template
+    name: base-templatea
     msName: base-template
 
 spring:
