@@ -122,4 +122,73 @@ public class ImageDataServiceImpl implements ImageDataService {
             throw new BaseException(ResponseCodeEnum.IMAGE_NOT_DELETED.code(), ResponseCodeEnum.IMAGE_NOT_DELETED.message());
         }
     }
+
+    @Override
+    public ApiResponse<com.TransformerUI.TransformerUI.transport.response.AnomaliesResponse> detectAnomalies(String transformerNo, String inspectionNo) throws BaseException {
+        try {
+            Optional<ImageDataEntity> entityOpt = imageDataRepository.findByTransformerNoAndInspectionNoAndType(transformerNo, inspectionNo, "Thermal");
+            if (entityOpt.isEmpty()) {
+                throw new BaseException(ResponseCodeEnum.NOT_FOUND.code(), "Thermal image not found for Transformer: " + transformerNo + ", Inspection: " + inspectionNo);
+            }
+            ImageDataEntity entity = entityOpt.get();
+            byte[] imageBytes = entity.getImage();
+            if (imageBytes == null || imageBytes.length == 0) {
+                throw new BaseException("Stored image bytes are empty for Transformer: " + transformerNo + ", Inspection: " + inspectionNo);
+            }
+
+            // Run Python YOLO (this can throw) — wrap to convert into BaseException
+            com.TransformerUI.TransformerUI.transport.response.AnomaliesResponse anomaliesResponse;
+            try {
+                anomaliesResponse = PythonYOLO.runYOLO(imageBytes);
+            } catch (RuntimeException ex) {
+                // If the runner preserved a temp image, it encodes the path in the message
+                String msg = ex.getMessage() == null ? "" : ex.getMessage();
+                log.error(LoggingAdviceConstants.EXCEPTION_STACK_TRACE, msg, StackTraceTracker.displayStackStraceArray(ex.getStackTrace()));
+                anomaliesResponse = new com.TransformerUI.TransformerUI.transport.response.AnomaliesResponse(java.util.Collections.emptyList());
+                // attempt to persist empty detectionJson
+                try {
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    String detectionJson = mapper.writeValueAsString(anomaliesResponse.getAnomalies());
+                    entity.setDetectionJson(detectionJson);
+                    imageDataRepository.save(entity);
+                } catch (Exception ex2) {
+                    log.error(LoggingAdviceConstants.EXCEPTION_STACK_TRACE, ex2.getMessage(), StackTraceTracker.displayStackStraceArray(ex2.getStackTrace()));
+                }
+
+                // If the message contains the preserved file path, include it in responseDescription
+                if (msg != null && msg.contains("FILE:")) {
+                    int idx = msg.indexOf("FILE:") + 5;
+                    int s2 = msg.indexOf(';', idx);
+                    String filePath = (s2 == -1) ? msg.substring(idx) : msg.substring(idx, s2);
+                    return new ApiResponse<>(ResponseCodeEnum.PARTIAL_SUCCESS.code(), "Detection failed; preserved image at: " + filePath, anomaliesResponse);
+                }
+
+                return new ApiResponse<>(ResponseCodeEnum.PARTIAL_SUCCESS.code(), "Detection ran but returned no anomalies (see logs).", anomaliesResponse);
+            }
+
+            // Persist detection JSON back to the entity
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                String detectionJson = mapper.writeValueAsString(anomaliesResponse.getAnomalies());
+                entity.setDetectionJson(detectionJson);
+                imageDataRepository.save(entity);
+            } catch (Exception ex) {
+                log.error(LoggingAdviceConstants.EXCEPTION_STACK_TRACE, ex.getMessage(), StackTraceTracker.displayStackStraceArray(ex.getStackTrace()));
+                // do not fail detection return — just log
+            }
+
+            // If there are no anomalies, return SUCCESS with a friendly description
+            if (anomaliesResponse.getAnomalies() == null || anomaliesResponse.getAnomalies().isEmpty()) {
+                return new ApiResponse<>(ResponseCodeEnum.SUCCESS.code(), "No errors", anomaliesResponse);
+            }
+
+            return new ApiResponse<>(ResponseCodeEnum.SUCCESS.code(), ResponseCodeEnum.SUCCESS.message(), anomaliesResponse);
+        } catch (BaseException ex) {
+            log.error(LoggingAdviceConstants.EXCEPTION_STACK_TRACE, ex.getMessage(), StackTraceTracker.displayStackStraceArray(ex.getStackTrace()));
+            throw ex;
+        } catch (Exception ex) {
+            log.error(LoggingAdviceConstants.EXCEPTION_STACK_TRACE, ex.getMessage(), StackTraceTracker.displayStackStraceArray(ex.getStackTrace()));
+            throw new BaseException(ResponseCodeEnum.IMAGE_NOT_DETECTED.code(), ResponseCodeEnum.IMAGE_NOT_DETECTED.message());
+        }
+    }
 }

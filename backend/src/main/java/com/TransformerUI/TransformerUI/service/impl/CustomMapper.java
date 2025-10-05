@@ -16,9 +16,13 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class CustomMapper {
+
+    private static final Logger log = LoggerFactory.getLogger(CustomMapper.class);
 
     private static final String INSPECTION_SEQUENCE = "inspectiondata_seq";
 
@@ -76,16 +80,12 @@ public class CustomMapper {
     public ImageDataEntity toEntity(ImageRequest imageRequest) {
         try {
             byte[] imageBytes = imageRequest.getPhoto().getBytes();
-            String detectionJson;
+            String detectionJson = "";
 
             if (Objects.equals(imageRequest.getType(), "Thermal")) {
-                // Run Python YOLO and get structured anomalies
-                AnomaliesResponse anomaliesResponse = PythonYOLO.runYOLO(imageBytes);
-
-                // Convert back to JSON string for DB storage
-                ObjectMapper mapper = new ObjectMapper();
-                detectionJson = mapper.writeValueAsString(anomaliesResponse.getAnomalies());
-            } else {
+                // Do not run the detector in the mapper — keep upload/save fast and
+                // let the controller or explicit detect endpoint run detection. Store
+                // an empty detectionJson for now.
                 detectionJson = "";
             }
 
@@ -98,8 +98,8 @@ public class CustomMapper {
                     .detectionJson(detectionJson)
                     .build();
 
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Failed to process image with YOLO", e);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read image bytes", e);
         }
     }
 
@@ -142,8 +142,11 @@ public class CustomMapper {
                 anomaliesResponse = new AnomaliesResponse(anomalies);
             } catch (Exception e) {
                 // log error but don't break response
-                anomaliesResponse = null;
+                anomaliesResponse = new AnomaliesResponse(java.util.Collections.emptyList());
             }
+        } else {
+            // Always return an AnomaliesResponse (possibly empty) so frontend can rely on it
+            anomaliesResponse = new AnomaliesResponse(java.util.Collections.emptyList());
         }
 
         return new ImageResponse(

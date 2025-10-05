@@ -12,6 +12,7 @@ public enum ResponseCodeEnum {
     INSPECTION_NOT_UPDATED("5000", "Inspection is partially updated or not updated"),
     TRANSFORMER_NOT_UPDATED("5000", "Transformer is partially updated or not updated"),
     IMAGE_NOT_UPDATED("5000", "Image is partially updated or not updated"),
+    IMAGE_NOT_DETECTED("5000", "Image detection failed"),
     TRANSFORMER_NOT_CONNECTED("5000","Transformer is not connected"),
     INSPECTION_NOT_CONNECTED("5000","Inspection is not connected"),
     IMAGE_NOT_CONNECTED("5000","Image is not connected"),

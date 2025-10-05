@@ -1,0 +1,36 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run TransformerUI (jar)",
+      "type": "shell",
+      "command": "java",
+      "args": [
+        "-Dpython.exec=${workspaceFolder}/backend/python/.venv/Scripts/python.exe",
+        "-jar",
+        "${workspaceFolder}/backend/target/TransformerUI-0.0.1-SNAPSHOT.jar"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run TransformerUI (maven)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\backend\\run_backend.cmd",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

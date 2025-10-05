@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import TransformerForm from '../components/TransformerForm';
-import TransformerDetail from '../components/TransformerDetail';
 import { useTransformers } from '../hooks/useTransformers';
 import { useNavigate } from "react-router-dom";
 
 
 export default function TransformersPage() {
   const [editItem, setEditItem] = useState<any | null>(null);
-  const [viewingTransformer, setViewingTransformer] = useState<any | null>(null);
+  // viewingTransformer state removed — not used in this page
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -31,10 +30,7 @@ export default function TransformersPage() {
   const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
   const transformerList = fullList.slice(offset, offset + ITEMS_PER_PAGE);
 
-  const handleViewTransformer = (transformer: any) => {
-    console.log("View clicked:", transformer); // ✅ Debug log
-    setViewingTransformer(transformer);
-  };
+  // handleViewTransformer removed; navigation to detail handled by View button
 
   return (
     <div className="container">

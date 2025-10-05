@@ -18,15 +18,15 @@ return (
 <label className="label">Choose Transformer (sets target for uploads)</label>
 <select className="input" value={selectedTransformerId || ''} onChange={(e) => setSelectedTransformerId(e.target.value || undefined)}>
 <option value="">Select transformer…</option>
-{transformers?.map(t => <option key={t.id} value={t.id}>{t.id}</option>)}
+{transformers?.map((t: any) => <option key={t.id} value={t.id}>{t.id}</option>)}
 </select>
 </div>
 
 
 <ImageUploadForm
 transformers={transformers || []}
-onUpload={({ transformerId, type, envCondition, file }: { transformerId: string; type: ImageType; envCondition?: EnvCondition; file: File }) => {
-uploadMutation.mutate({ file, type, envCondition });
+onUpload={(args: { transformerId: string; type: ImageType; envCondition?: EnvCondition; file: File }) => {
+	uploadMutation.mutate({ file: args.file, type: args.type, envCondition: args.envCondition });
 }}
 />
 

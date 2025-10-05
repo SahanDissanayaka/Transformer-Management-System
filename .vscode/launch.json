@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run backend (use Tasks)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/README.md",
+      "console": "integratedTerminal",
+      "presentation": {
+        "hidden": true
+      }
+    }
+  ]
+}
