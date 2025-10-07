@@ -15,6 +15,20 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+const sriLankanProvinces = [
+  "Central Province",
+  "Eastern Province",
+  "Northern Province",
+  "Southern Province",
+  "Western Province",
+  "North Western Province",
+  "North Central Province",
+  "Uva Province",
+  "Sabaragamuwa Province",
+];
+
+const transformerTypes = ["bulk", "distribution"];
+
 export default function TransformerForm({
   onSubmit,
   submitting,
@@ -53,11 +67,14 @@ export default function TransformerForm({
       <div className="row">
         <div>
           <label className="label">Region</label>
-          <input
-            className="input"
-            placeholder="e.g., Colombo"
-            {...register("region")}
-          />
+          <select className="input" {...register("region")}>
+            <option value="">Select a region</option>
+            {sriLankanProvinces.map((province) => (
+              <option key={province} value={province}>
+                {province}
+              </option>
+            ))}
+          </select>
           {errors.region && (
             <small style={{ color: "salmon" }}>{errors.region.message}</small>
           )}
@@ -91,11 +108,14 @@ export default function TransformerForm({
         </div>
         <div>
           <label className="label">Type</label>
-          <input
-            className="input"
-            placeholder="e.g., Power"
-            {...register("type")}
-          />
+          <select className="input" {...register("type")}>
+            <option value="">Select a type</option>
+            {transformerTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
           {errors.type && (
             <small style={{ color: "salmon" }}>{errors.type.message}</small>
           )}

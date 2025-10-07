@@ -1,13 +1,26 @@
 import { useEffect, useState } from 'react';
 import { getInspectionsForTransformer, deleteInspection } from '../api/inspectionApi';
+import { viewTransformerBaseline } from '../api/imageApi';
 import AddInspectionModal from './AddInspectionModal';
 
 export default function TransformerDetail({ transformer, onClose }: any) {
   const [inspections, setInspections] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [baselineSrc, setBaselineSrc] = useState<string | null>(null);
 
   useEffect(() => {
     getInspectionsForTransformer(transformer.transformerNo).then(setInspections);
+    // Fetch the transformer-level baseline (if any) and keep as a small thumbnail
+    (async () => {
+      try {
+        const r: any = await viewTransformerBaseline(transformer.transformerNo);
+        if (r?.responseCode === '2000' && r.responseData?.photoBase64) {
+          setBaselineSrc(`data:image/png;base64,${r.responseData.photoBase64}`);
+        } else {
+          setBaselineSrc(null);
+        }
+      } catch (e) { setBaselineSrc(null); }
+    })();
   }, [transformer]);
 
   const getStatusColor = (status: string) => {
@@ -81,7 +94,12 @@ export default function TransformerDetail({ transformer, onClose }: any) {
           )}
           {inspections.map((insp, i) => (
             <tr key={i}>
-              <td>{insp.inspectionNo}</td>
+                <td style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {baselineSrc && (
+                    <img src={baselineSrc} alt="baseline" style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 4, border: '1px solid #e5e7eb' }} />
+                  )}
+                  <span>{insp.inspectionNo}</span>
+                </td>
               <td>{insp.inspectedDate}</td>
               <td>{insp.maintenanceDate || '-'}</td>
               <td>

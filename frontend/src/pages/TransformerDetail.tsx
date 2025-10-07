@@ -16,8 +16,7 @@ export default function TransformerDetailPage() {
   const {
     data: inspections,
     isLoading,
-    createInspection,
-    creating,
+    // createInspection, creating — unused here
   } = useInspections(transformerNo, offset, ITEMS_PER_PAGE);
 
   const totalPages =

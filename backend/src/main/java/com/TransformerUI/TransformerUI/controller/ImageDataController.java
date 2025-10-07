@@ -23,10 +23,35 @@ public class ImageDataController extends BaseController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ApiResponse<Void>> uploadImage(@ModelAttribute ImageRequest imageRequest, HttpServletRequest request) throws BaseException {
+    public ResponseEntity<ApiResponse<ImageResponse>> uploadImage(@ModelAttribute ImageRequest imageRequest, HttpServletRequest request) throws BaseException {
         long startTime = System.currentTimeMillis();
         log.info(LoggingAdviceConstants.REQUEST_INITIATED, request.getMethod(), request.getRequestURI());
-        ApiResponse<Void> resp = imageDataService.saveImage(imageRequest);
+        // Save the image (do not run detector in mapper)
+        ApiResponse<Void> saveResp = imageDataService.saveImage(imageRequest);
+        // After saving, attempt detection (best-effort). If detection fails partially, we'll return the saved image but include the detection message.
+        String detectionMsg = null;
+        String detectionCode = null;
+        try {
+            ApiResponse<com.TransformerUI.TransformerUI.transport.response.AnomaliesResponse> det = imageDataService.detectAnomalies(imageRequest.getTransformerNo(), imageRequest.getInspectionNo());
+            detectionCode = det.getResponseCode();
+            detectionMsg = det.getResponseDescription();
+            if (!"2000".equals(det.getResponseCode()) && det.getResponseDescription() != null) {
+                log.warn("Detection returned non-success for {}/{}: {}", imageRequest.getTransformerNo(), imageRequest.getInspectionNo(), det.getResponseDescription());
+            }
+        } catch (Exception ex) {
+            log.warn("Detection attempt failed after upload: {}", ex.getMessage());
+            detectionMsg = "Detection attempt failed: " + ex.getMessage();
+            detectionCode = "2007";
+        }
+
+        // After saving (and attempting detection), fetch the stored image response (includes anomalies/photo)
+        ApiResponse<ImageResponse> resp = imageDataService.getImage(imageRequest.getTransformerNo(), imageRequest.getInspectionNo(), imageRequest.getType());
+        // If detection returned a non-success code or a message, include it in the responseDescription
+        if (detectionMsg != null && !detectionMsg.isBlank()) {
+            String combined = resp.getResponseDescription() == null ? "" : resp.getResponseDescription() + " | ";
+            combined += "Detection: (" + (detectionCode == null ? "" : detectionCode) + ") " + detectionMsg;
+            resp.setResponseDescription(combined);
+        }
         log.info(LoggingAdviceConstants.REQUEST_TERMINATED, System.currentTimeMillis() - startTime, resp.getResponseDescription());
         return setResponseEntity(resp);
     }
@@ -36,6 +61,15 @@ public class ImageDataController extends BaseController {
         long startTime = System.currentTimeMillis();
         log.info(LoggingAdviceConstants.REQUEST_INITIATED, request.getMethod(), request.getRequestURI());
         ApiResponse<ImageResponse> resp = imageDataService.getImage(transformerNo, inspectionNo, type);
+        log.info(LoggingAdviceConstants.REQUEST_TERMINATED, System.currentTimeMillis() - startTime, resp.getResponseDescription());
+        return setResponseEntity(resp);
+    }
+
+    @PostMapping("/detect")
+    public ResponseEntity<ApiResponse<com.TransformerUI.TransformerUI.transport.response.AnomaliesResponse>> detectImage(@RequestParam String transformerNo, @RequestParam String inspectionNo, HttpServletRequest request) throws BaseException {
+        long startTime = System.currentTimeMillis();
+        log.info(LoggingAdviceConstants.REQUEST_INITIATED, request.getMethod(), request.getRequestURI());
+        ApiResponse<com.TransformerUI.TransformerUI.transport.response.AnomaliesResponse> resp = imageDataService.detectAnomalies(transformerNo, inspectionNo);
         log.info(LoggingAdviceConstants.REQUEST_TERMINATED, System.currentTimeMillis() - startTime, resp.getResponseDescription());
         return setResponseEntity(resp);
     }
