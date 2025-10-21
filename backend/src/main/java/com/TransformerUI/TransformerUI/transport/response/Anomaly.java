@@ -14,6 +14,4 @@ public class Anomaly {
     private String errorType;
     private double confidence;
     private List<Double> box;
-    private Boolean manual;
-    private String user;
 }

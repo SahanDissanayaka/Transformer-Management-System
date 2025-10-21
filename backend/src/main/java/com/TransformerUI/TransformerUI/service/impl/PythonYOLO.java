@@ -70,14 +70,15 @@ public class PythonYOLO {
                 Files.createDirectories(debugDir);
                 Path preserved = debugDir.resolve("failed_" + System.currentTimeMillis() + ".jpg");
                 Files.copy(tempFile, preserved);
+                Files.delete(tempFile); // Delete after successful copy
                 throw new RuntimeException("PY_ERR;FILE:" + preserved.toString() + ";ERR:" + err);
             } catch (IOException ioEx) {
+                try { Files.deleteIfExists(tempFile); } catch (Exception ignore) {}
                 throw new RuntimeException("PY_ERR;FILE:UNKNOWN;ERR:" + err);
             }
         }
 
-        // Delete temp image
-        Files.delete(tempFile);
+        // Don't delete temp image yet - need it for error debugging if JSON parsing fails
 
         String resultStr = outBuf.toString().trim();
         // Try to extract JSON array/object from stdout. If script prints logs
@@ -115,16 +116,23 @@ public class PythonYOLO {
                 Files.createDirectories(debugDir);
                 Path preserved = debugDir.resolve("failed_parse_" + System.currentTimeMillis() + ".jpg");
                 Files.copy(tempFile, preserved);
+                Files.delete(tempFile); // Delete after successful copy
                 throw new RuntimeException("PY_PARSE_ERR;FILE:" + preserved.toString() + ";ERR:" + e.getMessage());
             } catch (IOException ioEx) {
-                // fallback to empty anomalies
+                // fallback to empty anomalies - clean up temp file
+                try { Files.deleteIfExists(tempFile); } catch (Exception ignore) {}
                 anomalies = java.util.Collections.emptyList();
                 return new AnomaliesResponse(anomalies);
             }
         }
 
-        // Delete temp image on success
-        try { Files.deleteIfExists(tempFile); } catch (Exception ignore) {}
+        // Delete temp image after successful parsing
+        try { 
+            Files.deleteIfExists(tempFile); 
+        } catch (Exception e) {
+            // Log but don't fail - anomalies are already parsed
+            System.err.println("Warning: Failed to delete temp file " + tempFile + ": " + e.getMessage());
+        }
 
         return new AnomaliesResponse(anomalies);
 

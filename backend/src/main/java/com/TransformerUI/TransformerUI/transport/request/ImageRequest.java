@@ -14,6 +14,4 @@ public class ImageRequest {
     private String type;
     private String weather;
     private MultipartFile photo;
-    private String detectionJson;
-    private String logs;
 }

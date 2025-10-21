@@ -42,9 +42,6 @@ public class ImageDataEntity {
 
     @Column(columnDefinition = "TEXT")
     private String detectionJson;
-
-    @Column(columnDefinition = "TEXT")
-    private String logs;
 }
 
 

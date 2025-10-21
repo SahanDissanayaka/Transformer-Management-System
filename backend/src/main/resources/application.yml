@@ -31,8 +31,3 @@ spring:
 rest:
   connect-timeout: 5000
   read-timeout: 20000
-
-python:
-  exec: "C:\\Users\\Sahan\\AppData\\Local\\Programs\\Python\\Python310\\python.exe"
-
-

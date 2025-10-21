@@ -6,11 +6,15 @@ public class LoggingAdviceConstants {
     public static final String SCM_CONTEXT_UPDATE = "SCM_CONTEXT_UPDATE|{}|TYPE:{}|MESSAGE:{}";
     public static final String SCM_CONTEXT_UPDATE_DETAIL = "SCM_CONTEXT_UPDATE|0|TYPE:{}|RESPONSE:{}";
     public static final String REQUEST_INITIATED = "SCM_REQUEST_INITIATED|0|REQUEST_METHOD:{}|REQUEST_URI:{}";
+    // Backwards-compatible aliases used by controllers
+    public static final String REQUEST_INITIATED_LOG = REQUEST_INITIATED;
     public static final String SCHEDULER_INITIATED = "SCM_SCHEDULER_INITIATED|0|STARTED_AT:{}";
     public static final String SCHEDULER_TERMINATED = "SCM_SCHEDULER_TERMINATED|{}|ENDED_AT:{}";
     public static final String SCHEDULER_INFO = "SCM_SCHEDULER_INFO|0|MESSAGE:{}";
     public static final String FULL_RESPONSE = "SCM_FULL_RESPONSE|0|CONTROLLER_RESPONSE:{}";
     public static final String REQUEST_TERMINATED = "SCM_REQUEST_TERMINATED|{}|REASON:{}";
+    // Backwards-compatible aliases used by controllers
+    public static final String REQUEST_TERMINATED_LOG = REQUEST_TERMINATED;
     public static final String EXCEPTION_STACK_TRACE = "SCM_EXCEPTION|{}|ERROR_MESSAGE:{}|STACK_TRACE:{}";
     public static final String SERVICE_TERMINATION = "SCM_SERVICE_TERMINATED|{}|MESSAGE:{}";
     public static final String SERVICE_TERMINATION_DETAIL = "SCM_SERVICE_TERMINATED|0|RESPONSE:{}";
@@ -22,5 +26,5 @@ public class LoggingAdviceConstants {
     public static final String SCM_API_CALL = "SCM_API_CALL|{}|METHOD:{}|API_URL:{}|HTTP_STATUS:{}";
     public static final String API_CALL_EXCEPTION = "SCM_API_CALL_EXCEPTION|{}|METHOD:{}|API_URL:{}|HTTP_STATUS:{}|API_RESPONSE:{}|ERROR_MESSAGE:{}|STACK_TRACE:{}";
     public static final String SCM_API_CALL_DETAIL = "SCM_API_CALL_DETAIL|0|REQUEST_BODY:{}|RESPONSE_HEADERS:{}|RESPONSE_BODY:{}";
-
+    
 }
