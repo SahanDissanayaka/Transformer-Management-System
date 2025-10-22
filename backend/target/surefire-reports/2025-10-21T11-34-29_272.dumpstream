@@ -1,0 +1,5 @@
+# Created at 2025-10-21T11:34:29.427
+Boot Manifest-JAR contains absolute paths in classpath 'D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\target\test-classes'
+Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+'other' has different root
+

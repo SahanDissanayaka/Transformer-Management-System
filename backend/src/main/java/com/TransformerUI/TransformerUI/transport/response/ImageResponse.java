@@ -16,4 +16,5 @@ public class ImageResponse {
     private AnomaliesResponse anomaliesResponse;
     private String dateTime;
     private String photoBase64;
+    private String logs;
 }

@@ -121,6 +121,14 @@ public class CustomMapper {
                 throw new RuntimeException("Failed to read image bytes", e);
             }
         }
+        if (imageRequest.getDetectionJson() != null){
+            existingEntity.setDetectionJson(imageRequest.getDetectionJson());
+        }
+
+        if (imageRequest.getLogs() !=null){
+            existingEntity.setLogs(imageRequest.getLogs());
+        }
+
     }
 
     public ImageResponse toResponse(ImageDataEntity entity) {
@@ -157,7 +165,9 @@ public class CustomMapper {
                 entity.getWeather(),
                 anomaliesResponse,
                 entity.getDateTime(),
-                photoBase64
+                photoBase64,
+                entity.getLogs()
+
         );
     }
 

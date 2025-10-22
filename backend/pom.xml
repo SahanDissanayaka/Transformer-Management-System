@@ -108,8 +108,8 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
-        <!-- Embedded venv on Windows -->
-        <python.exec>${project.basedir}/python/.venv/Scripts/python.exe</python.exec>
+        <!-- Use conda environment python - falls back to env var if not set via -D -->
+        <python.exec>${env.PYTHON_EXEC}</python.exec>
         <!-- Activates Spring's 'local' profile when launched via mvn -->
         <spring-boot.run.profiles>local</spring-boot.run.profiles>
       </properties>
