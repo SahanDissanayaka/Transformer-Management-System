@@ -6,11 +6,11 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { router } from "./routes";
 import "./index.css";
 
-const qc = new QueryClient();
+const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <QueryClientProvider client={qc}>
+    <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

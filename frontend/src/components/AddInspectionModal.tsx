@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { createInspection, updateInspection } from '../api/inspectionApi';
-import './AddInspectionModal.css';
+import { useState, useEffect } from "react";
+import { createInspection, updateInspection } from "../api/inspectionDataApi";
 
 export default function AddInspectionModal({ transformerNo, inspection, onClose, onSuccess }: any) {
   // Prefill state if editing

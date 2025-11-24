@@ -1,12 +1,10 @@
 package com.TransformerUI.TransformerUI.entity;
 
-import com.TransformerUI.TransformerUI.transport.response.AnomaliesResponse;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 
 @Builder
 @Data

@@ -1,60 +1,16 @@
-import { useState } from "react";
-import ImageUploadForm from "../components/ImageUploadForm";
-import { useTransformers } from "../hooks/useTransformers";
-import { useUploadImage } from "../hooks/useImages";
-import type { EnvCondition, ImageType } from "../types";
+// ⚠️ DEPRECATED: This page is no longer functional
+// The useUploadImage hook was removed as part of codebase cleanup
+// Images are now managed within the inspection workflow
+// Please use InspectionDetailPage instead
 
 export default function UploadImagesPage() {
-  const { data: transformers } = useTransformers();
-  const [selectedTransformerId, setSelectedTransformerId] = useState<
-    string | undefined
-  >(undefined);
-  const uploadMutation = useUploadImage(selectedTransformerId);
-
   return (
     <div className="container">
-      <h2 style={{ marginBottom: 12 }}>Upload Maintenance Images</h2>
-      <div className="card" style={{ marginBottom: 12 }}>
-        <label className="label">
-          Choose Transformer (sets target for uploads)
-        </label>
-        <select
-          className="input"
-          value={selectedTransformerId || ""}
-          onChange={(e) =>
-            setSelectedTransformerId(e.target.value || undefined)
-          }
-        >
-          <option value="">Select transformer…</option>
-          {transformers?.map((t: any) => (
-            <option key={t.id} value={t.id}>
-              {t.id}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <ImageUploadForm
-        transformers={transformers || []}
-        onUpload={(args: {
-          transformerId: string;
-          type: ImageType;
-          envCondition?: EnvCondition;
-          file: File;
-        }) => {
-          uploadMutation.mutate({
-            file: args.file,
-            type: args.type,
-            envCondition: args.envCondition,
-          });
-        }}
-      />
-
-      {uploadMutation.isPending && <p>Uploading…</p>}
-      {uploadMutation.error && (
-        <p style={{ color: "salmon" }}>Upload failed.</p>
-      )}
-      {uploadMutation.isSuccess && <p>Uploaded successfully!</p>}
+      <h2>⚠️ This Page is Deprecated</h2>
+      <p>
+        Image management has been integrated into the inspection workflow.
+        Please use the Transformer detail page to manage images.
+      </p>
     </div>
   );
 }

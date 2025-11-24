@@ -1,7 +1,6 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Transformer } from "../api/endpoints";
 import React from "react";
 
 // Schema aligned with backend
@@ -34,9 +33,9 @@ export default function TransformerForm({
   submitting,
   initialValues,
 }: {
-  onSubmit: (data: Omit<Transformer, "id">) => void;
+  onSubmit: (data: FormValues) => void;
   submitting?: boolean;
-  initialValues?: Partial<Transformer> | null;
+  initialValues?: FormValues | null;
 }) {
   const {
     register,

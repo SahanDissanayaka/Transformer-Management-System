@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getInspectionsForTransformer, deleteInspection } from '../api/inspectionApi';
-import { viewTransformerBaseline } from '../api/imageApi';
+import { getInspectionsForTransformer, deleteInspection } from '../api/inspectionDataApi';
+import { viewTransformerBaseline } from '../api/imageDataApi';
 import AddInspectionModal from './AddInspectionModal';
 
 export default function TransformerDetail({ transformer, onClose }: any) {

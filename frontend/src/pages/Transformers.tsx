@@ -1,17 +1,15 @@
-import { useState } from 'react';
-import TransformerForm from '../components/TransformerForm';
-import { useTransformers } from '../hooks/useTransformers';
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import TransformerForm from "../components/TransformerForm";
+import { useTransformers } from "../hooks/useTransformers";
 
+const ITEMS_PER_PAGE = 10;
 
 export default function TransformersPage() {
-  const [editItem, setEditItem] = useState<any | null>(null);
-  // viewingTransformer state removed — not used in this page
-  const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
-  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
   const navigate = useNavigate();
-
+  const [editItem, setEditItem] = useState<any | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   const {
     data,
@@ -30,7 +28,15 @@ export default function TransformersPage() {
   const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
   const transformerList = fullList.slice(offset, offset + ITEMS_PER_PAGE);
 
-  // handleViewTransformer removed; navigation to detail handled by View button
+  const handleSubmit = (values: any) => {
+    if (editItem) {
+      updateTransformer({ ...editItem, ...values }).then(() =>
+        setEditItem(null)
+      );
+    } else {
+      createTransformer(values);
+    }
+  };
 
   return (
     <div className="container">
@@ -38,18 +44,12 @@ export default function TransformersPage() {
 
       <TransformerForm
         initialValues={editItem}
-        onSubmit={(v) => {
-          if (editItem) {
-            updateTransformer({ ...editItem, ...v }).then(() => setEditItem(null));
-          } else {
-            createTransformer(v);
-          }
-        }}
+        onSubmit={handleSubmit}
         submitting={creating || updating}
       />
 
       {editItem && (
-        <p style={{ marginTop: 8, color: 'orange' }}>
+        <p style={{ marginTop: 8, color: "orange" }}>
           Editing transformer <strong>{editItem.transformerNo}</strong>.
           <button
             className="btn secondary"
@@ -64,7 +64,7 @@ export default function TransformersPage() {
       <div className="card" style={{ marginTop: 16 }}>
         <h3>Existing Records</h3>
         {isLoading && <p>Loading…</p>}
-        {error && <p style={{ color: 'salmon' }}>Failed to load.</p>}
+        {error && <p style={{ color: "salmon" }}>Failed to load.</p>}
 
         {transformerList.length > 0 ? (
           <>
@@ -83,29 +83,35 @@ export default function TransformersPage() {
                 {transformerList.map((t: any, idx: number) => (
                   <tr key={idx}>
                     <td>{t.region}</td>
-                    <td><span className="badge">{t.transformerNo}</span></td>
+                    <td>
+                      <span className="badge">{t.transformerNo}</span>
+                    </td>
                     <td>{t.poleNo}</td>
                     <td>{t.type}</td>
                     <td>{t.locationDetails}</td>
                     <td>
                       <button
                         className="btn secondary"
-                        style={{color: 'white' ,background: '#1e293b', marginRight: 6 }}
+                        style={{
+                          color: "white",
+                          background: "#1e293b",
+                          marginRight: 6,
+                        }}
                         onClick={() => setEditItem(t)}
                       >
                         Edit
                       </button>
                       <button
                         className="btn"
-                        style={{ background: 'crimson', marginRight: 6 }}
+                        style={{ background: "crimson", marginRight: 6 }}
                         disabled={deleting}
                         onClick={() => deleteTransformer(t.id)}
                       >
-                        {deleting ? 'Deleting…' : 'Delete'}
+                        {deleting ? "Deleting…" : "Delete"}
                       </button>
                       <button
                         className="btn"
-                        style={{ backgroundColor: '#3b82f6', color: 'white' }}
+                        style={{ backgroundColor: "#3b82f6", color: "white" }}
                         onClick={() => navigate(`/transformers/${t.transformerNo}`)}
                       >
                         View
@@ -119,24 +125,27 @@ export default function TransformersPage() {
             {totalPages > 1 && (
               <div style={{ marginTop: 16 }}>
                 <strong style={{ marginRight: 8 }}>Pages:</strong>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    style={{
-                      margin: '0 5px',
-                      padding: '6px 12px',
-                      borderRadius: 6,
-                      fontWeight: 'bold',
-                      backgroundColor: currentPage === page ? '#334155' : '#1e293b',
-                      color: '#fff',
-                      border: 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {page}
-                  </button>
-                ))}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      style={{
+                        margin: "0 5px",
+                        padding: "6px 12px",
+                        borderRadius: 6,
+                        fontWeight: "bold",
+                        backgroundColor:
+                          currentPage === page ? "#334155" : "#1e293b",
+                        color: "#fff",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
               </div>
             )}
           </>
@@ -144,15 +153,6 @@ export default function TransformersPage() {
           <p>No transformer records found.</p>
         )}
       </div>
-
-      {/* ✅ Detail panel below */}
-      {/* {viewingTransformer && (
-        console.log("Rendering detail for:", viewingTransformer), // ← Add this
-        <TransformerDetail
-          transformer={viewingTransformer}
-          onClose={() => setViewingTransformer(null)}
-        />
-      )} */}
     </div>
   );
 }

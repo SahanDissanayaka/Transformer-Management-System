@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useInspections } from "../hooks/useInspections";
 import AddInspectionModal from "../components/AddInspectionModal";
-import { deleteInspection } from "../api/inspectionApi";
+import { deleteInspection } from "../api/inspectionDataApi";
 
 export default function TransformerDetailPage() {
   const { transformerNo = "" } = useParams();
