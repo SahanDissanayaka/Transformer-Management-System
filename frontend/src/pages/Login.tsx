@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { authApi } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Login.css";
@@ -12,7 +11,6 @@ const Login: React.FC = () => {
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,7 +40,10 @@ const Login: React.FC = () => {
           console.log("Login: navigate to / (home) via client navigation");
           navigate("/");
         } else {
-          setError(response.responseDescription || "Invalid username or password");
+          console.log("Login failed:", response.responseDescription);
+          setError(
+            response.responseDescription || "Invalid username or password"
+          );
         }
       }
     } catch (err: any) {

@@ -21,9 +21,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const login = (username: string) => {
-    setIsAuthenticated(true);
-    setUsername(username);
     localStorage.setItem("username", username);
+    setUsername(username);
+    setIsAuthenticated(true);
   };
 
   const logout = () => {
