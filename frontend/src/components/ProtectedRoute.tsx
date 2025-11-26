@@ -8,8 +8,11 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated } = useAuth();
+  const hasStoredAuth = localStorage.getItem("username");
 
+  console.log("ProtectedRoute: isAuthenticated:", isAuthenticated);
   if (!isAuthenticated) {
+    console.log("ProtectedRoute: redirecting to /login");
     return <Navigate to="/login" replace />;
   }
 

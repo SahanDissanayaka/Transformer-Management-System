@@ -26,13 +26,7 @@ export const authApi = {
     return response.data;
   },
 
-  // Login user - get all users
-  getAllUsers: async (): Promise<AuthResponse> => {
-    const response = await apiClient.get<AuthResponse>('/transformer-thermal-inspection/login/view');
-    return response.data;
-  },
-
-  // Verify credentials (send to backend)
+  // Verify credentials (login)
   verifyCredentials: async (
     credentials: LoginCredentials
   ): Promise<AuthResponse> => {
