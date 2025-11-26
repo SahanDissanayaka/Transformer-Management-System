@@ -32,30 +32,14 @@ export const authApi = {
     return response.data;
   },
 
-  // Verify credentials (client-side check)
+  // Verify credentials (send to backend)
   verifyCredentials: async (
     credentials: LoginCredentials
-  ): Promise<boolean> => {
-    try {
-      const response = await apiClient.get<AuthResponse>('/transformer-thermal-inspection/login/view');
-      if (
-        response.data.responseCode === 2000 &&
-        response.data.responseData
-      ) {
-        const users = Array.isArray(response.data.responseData)
-          ? response.data.responseData
-          : [response.data.responseData];
-        
-        return users.some(
-          (user: User) =>
-            user.username === credentials.username &&
-            user.password === credentials.password
-        );
-      }
-      return false;
-    } catch (error) {
-      console.error('Error verifying credentials:', error);
-      return false;
-    }
+  ): Promise<AuthResponse> => {
+    const response = await apiClient.post<AuthResponse>(
+      '/transformer-thermal-inspection/login/verify',
+      credentials
+    );
+    return response.data;
   },
 };

@@ -34,12 +34,12 @@ const Login: React.FC = () => {
         }
       } else {
         // Login user
-        const isValid = await authApi.verifyCredentials({ username, password });
-        if (isValid) {
+        const response = await authApi.verifyCredentials({ username, password });
+        if (response.responseCode === 2000) {
           login(username);
           navigate("/");
         } else {
-          setError("Invalid username or password");
+          setError(response.responseDescription || "Invalid username or password");
         }
       }
     } catch (err: any) {
