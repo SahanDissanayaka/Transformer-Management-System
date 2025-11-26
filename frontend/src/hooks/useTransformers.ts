@@ -1,27 +1,33 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { TransformersAPI, type Transformer } from '../api/endpoints';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { TransformerAPI } from "../api/transformerDataApi";
+import type { Transformer } from "../types";
 
+/**
+ * Manage transformer CRUD operations with React Query
+ */
 export function useTransformers() {
   const qc = useQueryClient();
+  const queryKey = ["transformers"];
 
   const listQuery = useQuery({
-    queryKey: ['transformers'],
-    queryFn: () => TransformersAPI.filter([], 0, 1000), // ✅ fetch all, paginate locally
+    queryKey,
+    queryFn: () => TransformerAPI.filter([], 0, 1000),
   });
 
   const createMutation = useMutation({
-    mutationFn: (body: Omit<Transformer, 'id'>) => TransformersAPI.create(body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['transformers'] }),
+    mutationFn: (body: Omit<Transformer, "id">) =>
+      TransformerAPI.create(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey }),
   });
 
   const updateMutation = useMutation({
-    mutationFn: (body: Transformer) => TransformersAPI.update(body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['transformers'] }),
+    mutationFn: (body: Transformer) => TransformerAPI.update(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => TransformersAPI.remove(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['transformers'] }),
+    mutationFn: (id: string) => TransformerAPI.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey }),
   });
 
   return {

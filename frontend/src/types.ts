@@ -1,21 +1,18 @@
-export type EnvCondition = 'sunny' | 'cloudy' | 'rainy';
-
+export type EnvCondition = "sunny" | "cloudy" | "rainy";
 
 export interface Transformer {
-id: string; // business ID provided by admin
-location: string;
-capacity: number; // kVA or MVA
+  id: string;
+  location: string;
+  capacity: number;
 }
 
-
-export type ImageType = 'baseline' | 'thermal';
-
+export type ImageType = "baseline" | "thermal";
 
 export interface ThermalImageMeta {
-id: string;
-transformerId: string;
-url: string; // served by backend or CDN
-type: ImageType;
-envCondition?: EnvCondition; // required if type === 'baseline'
-createdAt: string;
+  id: string;
+  transformerId: string;
+  url: string;
+  type: ImageType;
+  envCondition?: EnvCondition;
+  createdAt: string;
 }
