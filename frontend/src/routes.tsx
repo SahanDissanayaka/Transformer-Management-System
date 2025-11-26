@@ -4,11 +4,21 @@ import Home from "./pages/Home";
 import TransformersPage from "./pages/Transformers";
 import TransformerDetailPage from "./pages/TransformerDetail";
 import InspectionDetailPage from "./pages/InspectionDetailPage";
+import Login from "./pages/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export const router = createBrowserRouter([
   {
+    path: "/login",
+    element: <Login />,
+  },
+  {
     path: "/",
-    element: <App />,
+    element: (
+      <ProtectedRoute>
+        <App />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <Home /> },
       { path: "transformers", element: <TransformersPage /> },
