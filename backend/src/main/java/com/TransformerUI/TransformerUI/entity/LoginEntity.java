@@ -17,7 +17,7 @@ public class LoginEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_seq")
     @SequenceGenerator(name = "user_seq", sequenceName = "user_seq", allocationSize = 1)
-    private String id;
+    private Long id;
     private String username;
     private String password;
     @Builder.Default

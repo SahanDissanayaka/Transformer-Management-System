@@ -53,16 +53,25 @@ public class LoginServiceImpl implements LoginService {
     }
 
     @Override
-    public ApiResponse<LoginResponse> getUserById(Long id) throws BaseException {
+    public ApiResponse<LoginResponse> verifyCredentials(LoginRequest loginRequest) throws BaseException {
+        long start = System.currentTimeMillis();
         try {
-            LoginEntity loginEntity = loginRepository.findById(id)
-                    .orElseThrow(() -> new BaseException(ResponseCodeEnum.BAD_REQUEST.code(), "Inspection not found with ID: " + id));
+            validateLoginData(loginRequest);
+            LoginEntity loginEntity = loginRepository.findByUsernameAndPassword(
+                    loginRequest.getUsername(),
+                    loginRequest.getPassword()
+            ).orElseThrow(() -> new BaseException(ResponseCodeEnum.BAD_REQUEST.code(), "Invalid username or password"));
+
             LoginResponse loginResponse = CommonMapper.map(loginEntity, LoginResponse.class);
             return new ApiResponse<>(ResponseCodeEnum.SUCCESS.code(), ResponseCodeEnum.SUCCESS.message(), loginResponse);
+        } catch (BaseException ex) {
+            throw ex;
         } catch (Exception ex) {
-            log.error(LoggingAdviceConstants.EXCEPTION_STACK_TRACE, ex.getMessage(), StackTraceTracker.displayStackStraceArray(ex.getStackTrace()));
-            throw new BaseException(ResponseCodeEnum.INSPECTION_NOT_CONNECTED.code(), ResponseCodeEnum.INSPECTION_NOT_CONNECTED.message());
+            log.error(LoggingAdviceConstants.EXCEPTION_STACK_TRACE,
+                    System.currentTimeMillis() - start,
+                    ex.getMessage(),
+                    StackTraceTracker.displayStackStraceArray(ex.getStackTrace()));
+            throw new BaseException(ResponseCodeEnum.BAD_REQUEST.code(), "Invalid username or password");
         }
     }
-
 }
