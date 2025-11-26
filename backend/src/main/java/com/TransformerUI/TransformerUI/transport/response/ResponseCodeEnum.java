@@ -19,7 +19,8 @@ public enum ResponseCodeEnum {
     INSPECTION_NOT_DELETED("5000", "Inspection is not deleted"),
     TRANSFORMER_NOT_DELETED("5000", "Transformer is not deleted"),
     IMAGE_NOT_DELETED("5000", "Image is not deleted"),
-    BAD_REQUEST("4000", "Bad Request");
+    BAD_REQUEST("4000", "Bad Request"),
+    USER_NOT_CREATED("5000", "User is partially created or not created");
 
     private String code;
     private String message;
