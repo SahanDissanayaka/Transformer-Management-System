@@ -8,8 +8,9 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated } = useAuth();
+  const hasStoredAuth = localStorage.getItem("username");
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !hasStoredAuth) {
     return <Navigate to="/login" replace />;
   }
 

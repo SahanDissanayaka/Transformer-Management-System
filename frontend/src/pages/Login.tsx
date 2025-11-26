@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { authApi } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Login.css";
@@ -12,7 +11,6 @@ const Login: React.FC = () => {
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,7 +23,7 @@ const Login: React.FC = () => {
       if (isRegisterMode) {
         // Register new user
         const response = await authApi.register({ username, password });
-        if (response.responseCode === 2000) {
+        if (response.responseCode == 2000) {
           setSuccess("Account created successfully! Please login.");
           setIsRegisterMode(false);
           setPassword("");
@@ -34,15 +32,30 @@ const Login: React.FC = () => {
         }
       } else {
         // Login user
-        const response = await authApi.verifyCredentials({ username, password });
-        if (response.responseCode === 2000) {
+        const response = await authApi.verifyCredentials({
+          username,
+          password,
+        });
+        console.log("Login response:", response);
+
+        if (response.responseCode == 2000) {
+          // Successful login - set auth state
+          console.log("Login successful, setting auth state");
           login(username);
-          navigate("/");
+          console.log("Auth state set, redirecting...");
+          // Delay to ensure localStorage is written
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 100);
         } else {
-          setError(response.responseDescription || "Invalid username or password");
+          console.log("Login failed:", response.responseDescription);
+          setError(
+            response.responseDescription || "Invalid username or password"
+          );
         }
       }
     } catch (err: any) {
+      console.error("Login error:", err);
       setError(
         err.response?.data?.responseDescription ||
           "An error occurred. Please try again."
