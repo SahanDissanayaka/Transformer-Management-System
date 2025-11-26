@@ -12,17 +12,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [username, setUsername] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Check if user is already logged in
-    const storedUsername = localStorage.getItem("username");
-    if (storedUsername) {
-      setIsAuthenticated(true);
-      setUsername(storedUsername);
-    }
-  }, []);
+  // Initialize auth state synchronously from localStorage so the app
+  // knows the auth status on first render (avoids timing issues).
+  const storedUsername = localStorage.getItem("username");
+  const [isAuthenticated, setIsAuthenticated] = useState(!!storedUsername);
+  const [username, setUsername] = useState<string | null>(
+    storedUsername ? storedUsername : null
+  );
 
   const login = (username: string) => {
     setIsAuthenticated(true);

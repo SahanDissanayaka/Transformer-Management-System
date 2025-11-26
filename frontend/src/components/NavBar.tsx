@@ -3,8 +3,10 @@ import { useAuth } from "../context/AuthContext";
 
 export default function NavBar() {
   const active: React.CSSProperties = { color: "white", fontWeight: 700 };
-  const { username, logout } = useAuth();
+  const { username, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  console.log("NavBar: render — username:", username, "isAuthenticated:", isAuthenticated);
 
   const handleLogout = () => {
     logout();
