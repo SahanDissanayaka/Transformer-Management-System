@@ -155,6 +155,16 @@ export default function InspectionDetailPage() {
   const { username, role, isAuthenticated } = useAuth();
   const canEditEngineer = isAuthenticated && role === "engineer";
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (editingEngineer) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "auto";
+      };
+    }
+  }, [editingEngineer]);
+
   // Fetch inspection data from database if not passed via navigation
   useEffect(() => {
     const fetchData = async () => {
@@ -492,6 +502,27 @@ export default function InspectionDetailPage() {
             ? `
         <div class="section">
           <h2>Thermal Image</h2>
+          ${
+            weatherThermal
+              ? `<div style="text-align: center; margin-bottom: 12px;">
+            <span style="padding: 6px 16px; background-color: ${
+              weatherThermal === "SUNNY"
+                ? "#fbbf24"
+                : weatherThermal === "CLOUDY"
+                ? "#9ca3af"
+                : "#3b82f6"
+            }; color: white; border-radius: 16px; font-size: 14px; font-weight: 600;">
+              Weather: ${
+                weatherThermal === "SUNNY"
+                  ? "☀️ Sunny"
+                  : weatherThermal === "CLOUDY"
+                  ? "☁️ Cloudy"
+                  : "🌧️ Rainy"
+              }
+            </span>
+          </div>`
+              : ""
+          }
           <div style="text-align: center; margin: 20px 0;">
             <img src="${thermalImageWithBoxes}" alt="Thermal Image" style="max-width: 100%; height: auto; border: 1px solid #cbd5e1;" />
           </div>
@@ -1033,16 +1064,28 @@ export default function InspectionDetailPage() {
             alignItems: "center",
             justifyContent: "center",
             zIndex: 9999,
+            overflow: "hidden",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setEditingEngineer(false);
+            }
           }}
         >
           <div
             className="card"
             style={{
-              maxWidth: "1200px",
-              maxHeight: "90vh",
-              overflow: "auto",
-              padding: "24px",
-              width: "90%",
+              maxWidth: "1400px",
+              maxHeight: "92vh",
+              overflow: "hidden",
+              padding: 0,
+              width: "95%",
+              height: "92vh",
+              boxShadow:
+                "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              borderRadius: "12px",
+              display: "flex",
+              flexDirection: "column",
             }}
           >
             <div
@@ -1050,21 +1093,44 @@ export default function InspectionDetailPage() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: 20,
+                padding: "20px 24px",
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                borderRadius: "12px 12px 0 0",
+                marginBottom: 0,
               }}
             >
-              <h3 style={{ margin: 0 }}>Inspection Form</h3>
+              <h3
+                style={{
+                  margin: 0,
+                  color: "white",
+                  fontSize: "20px",
+                  fontWeight: "600",
+                }}
+              >
+                📋 Maintenance Inspection Form
+              </h3>
               <button
                 className="btn"
                 onClick={() => setEditingEngineer(false)}
                 style={{
-                  padding: "6px 12px",
-                  fontSize: "14px",
-                  background: "#e5e7eb",
+                  padding: "8px 14px",
+                  fontSize: "16px",
+                  background: "rgba(255, 255, 255, 0.2)",
                   border: "none",
                   cursor: "pointer",
-                  borderRadius: "4px",
+                  borderRadius: "8px",
+                  color: "white",
+                  fontWeight: "600",
+                  transition: "background 0.2s",
                 }}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.background =
+                    "rgba(255, 255, 255, 0.3)")
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.background =
+                    "rgba(255, 255, 255, 0.2)")
+                }
               >
                 ✕
               </button>
@@ -1075,23 +1141,42 @@ export default function InspectionDetailPage() {
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
                 gap: 24,
-                maxHeight: "calc(90vh - 100px)",
-                overflow: "auto",
+                flex: 1,
+                overflow: "hidden",
+                padding: "24px",
+                backgroundColor: "#f9fafb",
+                minHeight: 0,
               }}
             >
               {/* Left side - Form inputs - Scrollable */}
-              <div style={{ overflowY: "auto", paddingRight: 12 }}>
+              <div
+                style={{
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  backgroundColor: "white",
+                  borderRadius: "8px",
+                  padding: "20px",
+                  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                  maxHeight: "100%",
+                }}
+              >
                 {/* ===== Engineer Fields ===== */}
                 <h5
                   style={{
                     marginTop: 0,
                     marginBottom: 16,
-                    fontSize: "15px",
-                    fontWeight: "600",
-                    color: "#1f2937",
+                    fontSize: "16px",
+                    fontWeight: "700",
+                    color: "#1e293b",
+                    paddingBottom: "10px",
+                    borderBottom: "2px solid #e2e8f0",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
                   }}
                 >
-                  Inspection Details
+                  <span style={{ fontSize: "18px" }}>📄</span> Inspection
+                  Details
                 </h5>
 
                 {/* Read-only inspection info */}
@@ -1237,12 +1322,18 @@ export default function InspectionDetailPage() {
                   style={{
                     marginTop: 24,
                     marginBottom: 16,
-                    fontSize: "15px",
-                    fontWeight: "600",
-                    color: "#1f2937",
+                    fontSize: "16px",
+                    fontWeight: "700",
+                    color: "#1e293b",
+                    paddingBottom: "10px",
+                    borderBottom: "2px solid #e2e8f0",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
                   }}
                 >
-                  Engineer Information
+                  <span style={{ fontSize: "18px" }}>👷</span> Engineer
+                  Information
                 </h5>
 
                 <div style={{ marginBottom: 12 }}>
@@ -1347,30 +1438,22 @@ export default function InspectionDetailPage() {
                   />
                 </div>
 
-                {/* ===== Maintenance Part 1 ===== */}
-                <h5
-                  style={{
-                    marginTop: 24,
-                    marginBottom: 16,
-                    fontSize: "15px",
-                    fontWeight: "600",
-                    color: "#1f2937",
-                  }}
-                >
-                  Infrared Readings
-                </h5>
-
                 {/* ===== IR Readings ===== */}
                 <h5
                   style={{
                     marginTop: 24,
                     marginBottom: 16,
-                    fontSize: "15px",
-                    fontWeight: "600",
-                    color: "#1f2937",
+                    fontSize: "16px",
+                    fontWeight: "700",
+                    color: "#1e293b",
+                    paddingBottom: "10px",
+                    borderBottom: "2px solid #e2e8f0",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
                   }}
                 >
-                  Infrared Readings
+                  <span style={{ fontSize: "18px" }}>🌡️</span> Infrared Readings
                 </h5>
 
                 <div
@@ -1430,12 +1513,17 @@ export default function InspectionDetailPage() {
                   style={{
                     marginTop: 24,
                     marginBottom: 16,
-                    fontSize: "15px",
-                    fontWeight: "600",
-                    color: "#1f2937",
+                    fontSize: "16px",
+                    fontWeight: "700",
+                    color: "#1e293b",
+                    paddingBottom: "10px",
+                    borderBottom: "2px solid #e2e8f0",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
                   }}
                 >
-                  Power Readings
+                  <span style={{ fontSize: "18px" }}>⚡</span> Power Readings
                 </h5>
 
                 <div style={{ marginBottom: 12 }}>
@@ -1511,12 +1599,17 @@ export default function InspectionDetailPage() {
                   style={{
                     marginTop: 24,
                     marginBottom: 16,
-                    fontSize: "15px",
-                    fontWeight: "600",
-                    color: "#1f2937",
+                    fontSize: "16px",
+                    fontWeight: "700",
+                    color: "#1e293b",
+                    paddingBottom: "10px",
+                    borderBottom: "2px solid #e2e8f0",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
                   }}
                 >
-                  Equipment Details
+                  <span style={{ fontSize: "18px" }}>⚙️</span> Equipment Details
                 </h5>
 
                 <div style={{ marginBottom: 12 }}>
@@ -1577,12 +1670,18 @@ export default function InspectionDetailPage() {
                   style={{
                     marginTop: 24,
                     marginBottom: 16,
-                    fontSize: "15px",
-                    fontWeight: "600",
-                    color: "#1f2937",
+                    fontSize: "16px",
+                    fontWeight: "700",
+                    color: "#1e293b",
+                    paddingBottom: "10px",
+                    borderBottom: "2px solid #e2e8f0",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
                   }}
                 >
-                  Maintenance Personnel & Timings
+                  <span style={{ fontSize: "18px" }}>👥</span> Maintenance
+                  Personnel & Timings
                 </h5>
 
                 <div
@@ -1703,12 +1802,18 @@ export default function InspectionDetailPage() {
                   style={{
                     marginTop: 24,
                     marginBottom: 16,
-                    fontSize: "15px",
-                    fontWeight: "600",
-                    color: "#1f2937",
+                    fontSize: "16px",
+                    fontWeight: "700",
+                    color: "#1e293b",
+                    paddingBottom: "10px",
+                    borderBottom: "2px solid #e2e8f0",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
                   }}
                 >
-                  Inspection Sign-offs
+                  <span style={{ fontSize: "18px" }}>✍️</span> Inspection
+                  Sign-offs
                 </h5>
 
                 <div style={{ marginBottom: 12 }}>
@@ -1834,42 +1939,140 @@ export default function InspectionDetailPage() {
                 <div
                   style={{
                     display: "flex",
-                    gap: 8,
+                    gap: 12,
                     position: "sticky",
                     bottom: 0,
-                    backgroundColor: "#fff",
-                    paddingTop: 12,
-                    borderTop: "1px solid #e5e7eb",
+                    backgroundColor: "white",
+                    paddingTop: 16,
+                    paddingBottom: 8,
+                    borderTop: "2px solid #e5e7eb",
+                    marginLeft: -20,
+                    marginRight: -20,
+                    paddingLeft: 20,
+                    paddingRight: 20,
                   }}
                 >
                   <button
-                    className="btn primary"
                     onClick={handleSaveEngineerInputs}
                     disabled={savingEngineer}
+                    style={{
+                      flex: 1,
+                      padding: "12px 24px",
+                      backgroundColor: savingEngineer ? "#9ca3af" : "#3b82f6",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: "600",
+                      cursor: savingEngineer ? "not-allowed" : "pointer",
+                      transition: "all 0.2s",
+                      boxShadow: "0 2px 4px rgba(59, 130, 246, 0.3)",
+                    }}
+                    onMouseOver={(e) =>
+                      !savingEngineer &&
+                      (e.currentTarget.style.backgroundColor = "#2563eb")
+                    }
+                    onMouseOut={(e) =>
+                      !savingEngineer &&
+                      (e.currentTarget.style.backgroundColor = "#3b82f6")
+                    }
                   >
-                    {savingEngineer ? "Saving..." : "Save"}
+                    {savingEngineer ? "💾 Saving..." : "💾 Save Changes"}
                   </button>
                   <button
-                    className="btn"
                     onClick={generatePDF}
-                    style={{ backgroundColor: "#10b981", color: "white" }}
+                    style={{
+                      flex: 1,
+                      padding: "12px 24px",
+                      backgroundColor: "#10b981",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      boxShadow: "0 2px 4px rgba(16, 185, 129, 0.3)",
+                    }}
+                    onMouseOver={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#059669")
+                    }
+                    onMouseOut={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#10b981")
+                    }
                   >
-                    Generate PDF
+                    📄 Generate PDF
                   </button>
                   <button
-                    className="btn"
                     onClick={() => setEditingEngineer(false)}
+                    style={{
+                      padding: "12px 24px",
+                      backgroundColor: "#f3f4f6",
+                      color: "#374151",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseOver={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e5e7eb")
+                    }
+                    onMouseOut={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#f3f4f6")
+                    }
                   >
-                    Cancel
+                    ✕ Cancel
                   </button>
                 </div>
               </div>
 
               {/* Right side - Thermal image with annotations */}
-              <div style={{ overflowY: "auto", paddingRight: 12 }}>
-                <h4 style={{ marginTop: 0, marginBottom: 12 }}>
-                  Thermal Image
-                </h4>
+              <div
+                style={{
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  backgroundColor: "white",
+                  borderRadius: "8px",
+                  padding: "20px",
+                  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                  maxHeight: "100%",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 12,
+                  }}
+                >
+                  <h4 style={{ margin: 0 }}>Thermal Image</h4>
+                  {weatherThermal && (
+                    <span
+                      style={{
+                        padding: "4px 12px",
+                        backgroundColor:
+                          weatherThermal === "SUNNY"
+                            ? "#fbbf24"
+                            : weatherThermal === "CLOUDY"
+                            ? "#9ca3af"
+                            : "#3b82f6",
+                        color: "white",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {weatherThermal === "SUNNY"
+                        ? "☀️ Sunny"
+                        : weatherThermal === "CLOUDY"
+                        ? "☁️ Cloudy"
+                        : "🌧️ Rainy"}
+                    </span>
+                  )}
+                </div>
                 {thermal ? (
                   <div
                     style={{
