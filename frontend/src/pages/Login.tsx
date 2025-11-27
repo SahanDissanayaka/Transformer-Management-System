@@ -23,7 +23,7 @@ const Login: React.FC = () => {
       if (isRegisterMode) {
         // Register new user
         const response = await authApi.register({ username, password });
-        if (Number(response.responseCode) === 2000) {
+        if (response.responseCode == 2000) {
           setSuccess("Account created successfully! Please login.");
           setIsRegisterMode(false);
           setPassword("");
@@ -32,13 +32,21 @@ const Login: React.FC = () => {
         }
       } else {
         // Login user
-        const response = await authApi.verifyCredentials({ username, password });
-        console.log("Login: verifyCredentials response:", response);
-        if (Number(response.responseCode) === 2000) {
-          console.log("Login: calling login() with username:", username);
+        const response = await authApi.verifyCredentials({
+          username,
+          password,
+        });
+        console.log("Login response:", response);
+
+        if (response.responseCode == 2000) {
+          // Successful login - set auth state
+          console.log("Login successful, setting auth state");
           login(username);
-          console.log("Login: navigate to / (home) via client navigation");
-          navigate("/");
+          console.log("Auth state set, redirecting...");
+          // Delay to ensure localStorage is written
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 100);
         } else {
           console.log("Login failed:", response.responseDescription);
           setError(
@@ -47,7 +55,7 @@ const Login: React.FC = () => {
         }
       }
     } catch (err: any) {
-      console.error("Login: error in handleSubmit:", err);
+      console.error("Login error:", err);
       setError(
         err.response?.data?.responseDescription ||
           "An error occurred. Please try again."
