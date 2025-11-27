@@ -41,7 +41,26 @@ public class InspectionDataEntity {
     @Builder.Default
     private String status = "Pending";
 
-        public void generateInspectionNo() {
+    // Engineer-provided fields
+    @Column(name = "inspector_name")
+    private String inspectorName;
+
+    @Column(name = "engineer_status")
+    private String engineerStatus;
+
+    @Column(name = "voltage")
+    private String voltage;
+
+    @Column(name = "current")
+    private String current;
+
+    @Column(name = "recommended_action", length = 2000)
+    private String recommendedAction;
+
+    @Column(name = "additional_remarks", length = 2000)
+    private String additionalRemarks;
+
+    public void generateInspectionNo() {
         this.inspectionNo = String.format("INSP-%03d", this.id);
     }
 }

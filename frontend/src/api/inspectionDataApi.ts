@@ -36,5 +36,10 @@ export async function updateInspection(inspectionData: any) {
   return data;
 }
 
+export async function getInspectionById(id: number) {
+  const { data } = await client.get(`${BASE_PATH}/view/${id}`);
+  return data.responseData || null;
+}
+
 
 
