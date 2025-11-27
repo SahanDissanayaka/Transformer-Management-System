@@ -1,9 +1,63 @@
 :root {
-    --bg: #f0f2f5;       /* Light neutral background */
-    --card: rgba(255, 255, 255, 0.65); /* Glass effect */
-    --muted: #6b7280;    /* Soft gray */
-    --text: #111111;     /* Dark text */
-    --accent: #3b82f6;   /* Accent blue */
+    --bg: #0a051e;           /* Deep dark purple/blue */
+    --card: rgba(20, 10, 50, 0.7); /* Glass effect - dark purple */
+    --muted: #a0a0c0;        /* Soft lavender gray */
+    --text: #e0e0ff;          /* Light lavender text */
+    --accent: #00d4ff;        /* Cyan accent */
+    --accent-secondary: #ff00ff; /* Magenta accent */
+}
+
+/* Light theme */
+[data-theme="light"] {
+    --bg: #f5f7fa;           /* Light background */
+    --card: rgba(255, 255, 255, 0.9); /* Light card */
+    --muted: #64748b;        /* Muted gray */
+    --text: #1e293b;         /* Dark text */
+    --accent: #0ea5e9;       /* Light blue accent */
+    --accent-secondary: #ec4899; /* Pink accent */
+}
+
+/* Light theme - Navigation and Links */
+[data-theme="light"] a {
+    color: #0ea5e9;
+}
+
+[data-theme="light"] a:hover {
+    color: #0284c7;
+    text-decoration: underline;
+}
+
+/* Light theme - Navigation bar */
+[data-theme="light"] nav a,
+[data-theme="light"] nav button,
+[data-theme="light"] .navbar-user {
+    color: #1e293b;
+}
+
+[data-theme="light"] nav a:hover:not(.theme-toggle) {
+    color: #0ea5e9;
+    text-shadow: 0 0 8px rgba(14, 165, 233, 0.3);
+}
+
+/* Light theme - Table styling */
+[data-theme="light"] .table {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(14, 165, 233, 0.2);
+}
+
+[data-theme="light"] .table th {
+    background: rgba(14, 165, 233, 0.1);
+    color: #0ea5e9;
+    border-bottom: 2px solid rgba(14, 165, 233, 0.3);
+}
+
+[data-theme="light"] .table td {
+    color: #334155;
+    border-bottom: 1px solid rgba(14, 165, 233, 0.15);
+}
+
+[data-theme="light"] .table tr:hover {
+    background: rgba(14, 165, 233, 0.08);
 }
 
 * {
@@ -21,7 +75,6 @@ body {
     background: var(--bg);
     color: var(--text);
     line-height: 1.6;
-    background-image: url('https://www.transparenttextures.com/patterns/asfalt-light.png'); /* subtle texture */
 }
 
 /* Links */
@@ -39,18 +92,25 @@ a:hover {
     max-width: 1100px;
     margin: 0 auto;
     padding: 24px;
+    position: relative;
+    z-index: 1;
 }
 
 /* Card with glass effect */
 .card {
     background: var(--card);
-    color: #000000;
+    color: var(--text);
     padding: 20px;
     border-radius: 12px;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 212, 255, 0.15), inset 0 0 0 1px rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+[data-theme="light"] .card {
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+    border: 1px solid rgba(203, 213, 225, 0.5);
 }
 
 /* Input fields */
@@ -58,9 +118,9 @@ a:hover {
     width: 100%;
     padding: 10px 12px;
     font-size: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(0, 212, 255, 0.3);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(30, 15, 60, 0.6);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     color: var(--text);
@@ -69,8 +129,22 @@ a:hover {
 .input:focus, select:focus {
     outline: none;
     border-color: var(--accent);
-    background: rgba(255, 255, 255, 0.7);
-    box-shadow: 0 0 0 2px rgba(59,130,246,0.25);
+    background: rgba(30, 15, 60, 0.8);
+    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.25);
+}
+
+[data-theme="light"] .input,
+[data-theme="light"] select {
+    border: 1px solid rgba(203, 213, 225, 0.6);
+    background: rgba(248, 250, 252, 0.9);
+    color: var(--text);
+}
+
+[data-theme="light"] .input:focus,
+[data-theme="light"] select:focus {
+    border-color: var(--accent);
+    background: white;
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
 }
 
 /* Labels */
@@ -113,9 +187,9 @@ a:hover {
 }
 
 .btn.confirm, .btn.primary {
-    background: rgba(59, 130, 246, 0.85);
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.9), rgba(255, 0, 255, 0.7));
     color: #fff;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.5);
 }
 
 /* Table */
@@ -124,21 +198,22 @@ a:hover {
     border-collapse: collapse;
     margin-top: 16px;
     font-size: 14px;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(20, 10, 50, 0.6);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border-radius: 8px;
     overflow: hidden;
+    border: 1px solid rgba(0, 212, 255, 0.2);
 }
 
 .table th, .table td {
     padding: 10px 12px;
-    border-bottom: 1px solid rgba(0,0,0,0.08);
+    border-bottom: 1px solid rgba(0, 212, 255, 0.1);
     text-align: left;
 }
 
 .table tr:hover {
-    background: rgba(59,130,246,0.08);
+    background: rgba(0, 212, 255, 0.1);
 }
 
 /* Badge */
@@ -146,10 +221,10 @@ a:hover {
     display: inline-block;
     padding: 4px 10px;
     border-radius: 999px;
-    background: rgba(243,244,246,0.5);
+    background: rgba(0, 212, 255, 0.2);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    color: #333;
+    color: var(--accent);
     font-size: 12px;
     font-weight: 500;
 }
@@ -167,8 +242,8 @@ img.thumb {
     height: 160px;
     object-fit: cover;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
 }
 
 /* ========== MODAL STYLES ========== */
@@ -177,7 +252,7 @@ img.thumb {
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.7);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -186,13 +261,14 @@ img.thumb {
 
 /* Modal container */
 .modal {
-    background: white;
+    background: var(--card);
     padding: 24px;
     width: 400px;
     max-width: 95vw;
     border-radius: 8px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 12px 32px rgba(0, 212, 255, 0.3);
     position: relative;
+    border: 1px solid rgba(0, 212, 255, 0.2);
 }
 
 /* Make modal a column so footer stays visible and body can scroll */
@@ -221,22 +297,22 @@ img.thumb {
     background: none;
     border: none;
     font-size: 22px;
-    color: #666;
+    color: var(--muted);
     cursor: pointer;
     transition: color 0.2s ease;
 }
 
 .close-btn:hover {
-    color: #333;
+    color: var(--accent);
 }
 
-/* Modal body */
+/* Modal body label */
 .modal-body label {
     display: block;
     margin-bottom: 4px;
     margin-top: 12px;
     font-size: 14px;
-    color: #333;
+    color: var(--text);
 }
 
 .modal-body input {
@@ -244,8 +320,10 @@ img.thumb {
     padding: 8px;
     font-size: 14px;
     margin-bottom: 4px;
-    border: 1px solid #ccc;
+    border: 1px solid rgba(0, 212, 255, 0.2);
     border-radius: 4px;
+    background: rgba(30, 15, 60, 0.6);
+    color: var(--text);
 }
 
 /* Allow modal body to scroll if content is tall */
