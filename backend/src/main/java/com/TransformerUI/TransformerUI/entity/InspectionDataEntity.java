@@ -60,7 +60,7 @@ public class InspectionDataEntity {
     @Column(name = "additional_remarks", length = 2000)
     private String additionalRemarks;
 
-        public void generateInspectionNo() {
+    public void generateInspectionNo() {
         this.inspectionNo = String.format("INSP-%03d", this.id);
     }
 }

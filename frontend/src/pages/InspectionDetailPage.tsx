@@ -83,6 +83,48 @@ export default function InspectionDetailPage() {
     recommendedAction: "",
     additionalRemarks: "",
   });
+  
+  // Maintenance records
+  const [maintenanceRecord, setMaintenanceRecord] = useState({
+    // Location & Basic Info
+    poleNo: "",
+    locationDetails: "",
+    type: "",
+    inspected: "",
+    // Infrared Readings
+    irLeft: "",
+    irRight: "",
+    irFront: "",
+    // Power Readings
+    lastMonthKva: "",
+    lastMonthDate: "",
+    lastMonthTime: "",
+    currentMonthKva: "",
+    // Equipment Details
+    serial: "",
+    meterCtRatio: "",
+    make: "",
+    // Maintenance Personnel & Timings
+    startTime: "",
+    completionTime: "",
+    supervisedBy: "",
+    // Technicians & Helpers
+    techI: "",
+    techII: "",
+    techIII: "",
+    helpers: "",
+    // Inspection Sign-offs
+    inspectedBy: "",
+    inspectedByDate: "",
+    reflectedBy: "",
+    reflectedByDate: "",
+    reInspectedBy: "",
+    reInspectedByDate: "",
+    // CSS
+    css: "",
+    cssDate: "",
+  });
+  
   const [editingEngineer, setEditingEngineer] = useState(false);
   const [savingEngineer, setSavingEngineer] = useState(false);
   
@@ -94,6 +136,7 @@ export default function InspectionDetailPage() {
 
   useEffect(() => {
     if (passedInspection) {
+      // Prefill engineer inputs
       setEngineerInputs({
         inspectorName: passedInspection.inspectorName || "",
         engineerStatus: passedInspection.engineerStatus || "OK",
@@ -102,8 +145,45 @@ export default function InspectionDetailPage() {
         recommendedAction: passedInspection.recommendedAction || "",
         additionalRemarks: passedInspection.additionalRemarks || "",
       });
+      
+      // Prefill maintenance record (if it exists)
+      if (passedInspection.maintenanceRecord) {
+        setMaintenanceRecord({
+          poleNo: passedInspection.maintenanceRecord.poleNo || "",
+          locationDetails: passedInspection.maintenanceRecord.locationDetails || "",
+          type: passedInspection.maintenanceRecord.type || "",
+          inspected: passedInspection.maintenanceRecord.inspected || "",
+          irLeft: passedInspection.maintenanceRecord.irLeft || "",
+          irRight: passedInspection.maintenanceRecord.irRight || "",
+          irFront: passedInspection.maintenanceRecord.irFront || "",
+          lastMonthKva: passedInspection.maintenanceRecord.lastMonthKva || "",
+          lastMonthDate: passedInspection.maintenanceRecord.lastMonthDate || "",
+          lastMonthTime: passedInspection.maintenanceRecord.lastMonthTime || "",
+          currentMonthKva: passedInspection.maintenanceRecord.currentMonthKva || "",
+          serial: passedInspection.maintenanceRecord.serial || "",
+          meterCtRatio: passedInspection.maintenanceRecord.meterCtRatio || "",
+          make: passedInspection.maintenanceRecord.make || "",
+          startTime: passedInspection.maintenanceRecord.startTime || "",
+          completionTime: passedInspection.maintenanceRecord.completionTime || "",
+          supervisedBy: passedInspection.maintenanceRecord.supervisedBy || "",
+          techI: passedInspection.maintenanceRecord.techI || "",
+          techII: passedInspection.maintenanceRecord.techII || "",
+          techIII: passedInspection.maintenanceRecord.techIII || "",
+          helpers: passedInspection.maintenanceRecord.helpers || "",
+          inspectedBy: passedInspection.maintenanceRecord.inspectedBy || "",
+          inspectedByDate: passedInspection.maintenanceRecord.inspectedByDate || "",
+          reflectedBy: passedInspection.maintenanceRecord.reflectedBy || "",
+          reflectedByDate: passedInspection.maintenanceRecord.reflectedByDate || "",
+          reInspectedBy: passedInspection.maintenanceRecord.reInspectedBy || "",
+          reInspectedByDate: passedInspection.maintenanceRecord.reInspectedByDate || "",
+          css: passedInspection.maintenanceRecord.css || "",
+          cssDate: passedInspection.maintenanceRecord.cssDate || "",
+        });
+      }
     }
   }, [passedInspection]);
+
+  // Note: boxes are displayed via HTML overlays now, rendered directly in JSX below
 
   const handleSaveEngineerInputs = async () => {
     if (!passedInspection || !passedInspection.id) {
@@ -112,7 +192,8 @@ export default function InspectionDetailPage() {
     }
     setSavingEngineer(true);
     try {
-      const payload = {
+      // Save engineer inputs
+      const engineerPayload = {
         id: passedInspection.id,
         transformerNo: passedInspection.transformerNo,
         branch: passedInspection.branch,
@@ -122,11 +203,33 @@ export default function InspectionDetailPage() {
         maintenanceDate: passedInspection.maintenanceDate,
         ...engineerInputs,
       };
-      // Use updateInspection from api
       const { updateInspection } = await import("../api/inspectionDataApi");
-      await updateInspection(payload);
+      await updateInspection(engineerPayload);
+
+      // Save maintenance record if any field is filled
+      const hasMaintenanceData = Object.values(maintenanceRecord).some(v => v && v.toString().trim() !== '');
+      if (hasMaintenanceData) {
+        const maintenancePayload = {
+          inspectionId: passedInspection.id,
+          ...maintenanceRecord,
+        };
+        
+        try {
+          const response = await fetch('/api/maintenanceRecord/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(maintenancePayload),
+          });
+          
+          if (!response.ok) {
+            console.warn('Maintenance record save warning (engineer inputs saved)', response.statusText);
+          }
+        } catch (err) {
+          console.warn('Maintenance record save failed (engineer inputs saved)', err);
+        }
+      }
       
-      // Close edit mode and keep the updated state (already set in engineerInputs)
+      // Close edit mode
       setEditingEngineer(false);
       
       // Show brief success message
@@ -136,7 +239,7 @@ export default function InspectionDetailPage() {
       document.body.appendChild(successMsg);
       setTimeout(() => successMsg.remove(), 2000);
     } catch (error) {
-      console.error("Failed to save engineer inputs:", error);
+      console.error("Failed to save inspector inputs:", error);
       // Show error message
       const errorMsg = document.createElement('div');
       errorMsg.textContent = '❌ Failed to save';
@@ -314,7 +417,7 @@ export default function InspectionDetailPage() {
             className="btn primary" 
             onClick={() => setEditingEngineer(true)}
           >
-            ✏️ Edit Engineer Inputs
+            ✏️ Inspection Form
           </button>
         </div>
       )}
@@ -334,13 +437,14 @@ export default function InspectionDetailPage() {
           zIndex: 9999,
         }}>
           <div className="card" style={{
-            maxWidth: '600px',
+            maxWidth: '1200px',
             maxHeight: '90vh',
             overflow: 'auto',
             padding: '24px',
+            width: '90%',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ margin: 0 }}>Engineer Inputs</h3>
+              <h3 style={{ margin: 0 }}>Inspection Form</h3>
               <button 
                 className="btn"
                 onClick={() => setEditingEngineer(false)}
@@ -350,86 +454,531 @@ export default function InspectionDetailPage() {
               </button>
             </div>
 
-            <div>
-              <div style={{ marginBottom: 12 }}>
-                <label>Inspector Name</label>
-                <input
-                  type="text"
-                  placeholder="Inspector name"
-                  value={engineerInputs.inspectorName}
-                  onChange={(e) => setEngineerInputs({ ...engineerInputs, inspectorName: e.target.value })}
-                />
-              </div>
-
-              <div style={{ marginBottom: 12 }}>
-                <label>Transformer Status</label>
-                <select
-                  value={engineerInputs.engineerStatus}
-                  onChange={(e) => setEngineerInputs({ ...engineerInputs, engineerStatus: e.target.value })}
-                >
-                  <option value="OK">OK</option>
-                  <option value="Needs Maintenance">Needs Maintenance</option>
-                  <option value="Urgent Attention">Urgent Attention</option>
-                </select>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-                <div>
-                  <label>Voltage (V)</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, maxHeight: 'calc(90vh - 100px)', overflow: 'auto' }}>
+              {/* Left side - Form inputs - Scrollable */}
+              <div style={{ overflowY: 'auto', paddingRight: 12 }}>
+                {/* ===== Engineer Fields ===== */}
+                <h5 style={{ marginTop: 0, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Engineer Information</h5>
+                
+                <div style={{ marginBottom: 12 }}>
+                  <label>Inspector Name</label>
                   <input
-                    type="number"
-                    step="any"
-                    placeholder="Voltage"
-                    value={engineerInputs.voltage}
-                    onChange={(e) => setEngineerInputs({ ...engineerInputs, voltage: e.target.value })}
+                    type="text"
+                    placeholder="Inspector name"
+                    value={engineerInputs.inspectorName}
+                    onChange={(e) => setEngineerInputs({ ...engineerInputs, inspectorName: e.target.value })}
                   />
                 </div>
-                <div>
-                  <label>Current (A)</label>
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="Current"
-                    value={engineerInputs.current}
-                    onChange={(e) => setEngineerInputs({ ...engineerInputs, current: e.target.value })}
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Transformer Status</label>
+                  <select
+                    value={engineerInputs.engineerStatus}
+                    onChange={(e) => setEngineerInputs({ ...engineerInputs, engineerStatus: e.target.value })}
+                  >
+                    <option value="OK">OK</option>
+                    <option value="Needs Maintenance">Needs Maintenance</option>
+                    <option value="Urgent Attention">Urgent Attention</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div>
+                    <label>Voltage (V)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Voltage"
+                      value={engineerInputs.voltage}
+                      onChange={(e) => setEngineerInputs({ ...engineerInputs, voltage: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label>Current (A)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Current"
+                      value={engineerInputs.current}
+                      onChange={(e) => setEngineerInputs({ ...engineerInputs, current: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Recommended Action</label>
+                  <textarea
+                    placeholder="Recommended action"
+                    value={engineerInputs.recommendedAction}
+                    onChange={(e) => setEngineerInputs({ ...engineerInputs, recommendedAction: e.target.value })}
+                    rows={2}
                   />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Additional Remarks</label>
+                  <textarea
+                    placeholder="Additional remarks"
+                    value={engineerInputs.additionalRemarks}
+                    onChange={(e) => setEngineerInputs({ ...engineerInputs, additionalRemarks: e.target.value })}
+                    rows={2}
+                  />
+                </div>
+
+                {/* ===== Maintenance Part 1 ===== */}
+                <h5 style={{ marginTop: 24, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Location & Basic Info</h5>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Pole No</label>
+                  <input
+                    type="text"
+                    placeholder="Pole number"
+                    value={maintenanceRecord.poleNo}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, poleNo: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Location Details</label>
+                  <input
+                    type="text"
+                    placeholder="Location details"
+                    value={maintenanceRecord.locationDetails}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, locationDetails: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Type</label>
+                  <input
+                    type="text"
+                    placeholder="Type"
+                    value={maintenanceRecord.type}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, type: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Inspected</label>
+                  <input
+                    type="text"
+                    placeholder="Inspected"
+                    value={maintenanceRecord.inspected}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, inspected: e.target.value })}
+                  />
+                </div>
+
+                {/* ===== IR Readings ===== */}
+                <h5 style={{ marginTop: 24, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Infrared Readings</h5>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div>
+                    <label>IR Left</label>
+                    <input
+                      type="text"
+                      placeholder="Left"
+                      value={maintenanceRecord.irLeft}
+                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, irLeft: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label>IR Right</label>
+                    <input
+                      type="text"
+                      placeholder="Right"
+                      value={maintenanceRecord.irRight}
+                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, irRight: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label>IR Front</label>
+                    <input
+                      type="text"
+                      placeholder="Front"
+                      value={maintenanceRecord.irFront}
+                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, irFront: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                {/* ===== Power Readings ===== */}
+                <h5 style={{ marginTop: 24, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Power Readings</h5>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Last Month KVA</label>
+                  <input
+                    type="text"
+                    placeholder="Last month KVA"
+                    value={maintenanceRecord.lastMonthKva}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, lastMonthKva: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div>
+                    <label>Last Month Date</label>
+                    <input
+                      type="text"
+                      placeholder="Date"
+                      value={maintenanceRecord.lastMonthDate}
+                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, lastMonthDate: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label>Last Month Time</label>
+                    <input
+                      type="text"
+                      placeholder="Time"
+                      value={maintenanceRecord.lastMonthTime}
+                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, lastMonthTime: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Current Month KVA</label>
+                  <input
+                    type="text"
+                    placeholder="Current month KVA"
+                    value={maintenanceRecord.currentMonthKva}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, currentMonthKva: e.target.value })}
+                  />
+                </div>
+
+                {/* ===== Equipment Details ===== */}
+                <h5 style={{ marginTop: 24, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Equipment Details</h5>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Serial No</label>
+                  <input
+                    type="text"
+                    placeholder="Serial number"
+                    value={maintenanceRecord.serial}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, serial: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div>
+                    <label>Meter CT Ratio</label>
+                    <input
+                      type="text"
+                      placeholder="CT Ratio"
+                      value={maintenanceRecord.meterCtRatio}
+                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, meterCtRatio: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label>Make</label>
+                    <input
+                      type="text"
+                      placeholder="Manufacturer"
+                      value={maintenanceRecord.make}
+                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, make: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                {/* ===== Maintenance Part 2 ===== */}
+                <h5 style={{ marginTop: 24, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Maintenance Personnel & Timings</h5>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div>
+                    <label>Start Time</label>
+                    <input
+                      type="text"
+                      placeholder="Start time"
+                      value={maintenanceRecord.startTime}
+                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, startTime: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label>Completion Time</label>
+                    <input
+                      type="text"
+                      placeholder="Completion time"
+                      value={maintenanceRecord.completionTime}
+                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, completionTime: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Supervised By</label>
+                  <input
+                    type="text"
+                    placeholder="Supervisor name"
+                    value={maintenanceRecord.supervisedBy}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, supervisedBy: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Technician I</label>
+                  <input
+                    type="text"
+                    placeholder="Technician I name"
+                    value={maintenanceRecord.techI}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, techI: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Technician II</label>
+                  <input
+                    type="text"
+                    placeholder="Technician II name"
+                    value={maintenanceRecord.techII}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, techII: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Technician III</label>
+                  <input
+                    type="text"
+                    placeholder="Technician III name"
+                    value={maintenanceRecord.techIII}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, techIII: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Helpers</label>
+                  <input
+                    type="text"
+                    placeholder="Helper names"
+                    value={maintenanceRecord.helpers}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, helpers: e.target.value })}
+                  />
+                </div>
+
+                {/* ===== Inspection Sign-offs ===== */}
+                <h5 style={{ marginTop: 24, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Inspection Sign-offs</h5>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Inspected By</label>
+                  <input
+                    type="text"
+                    placeholder="Inspector name"
+                    value={maintenanceRecord.inspectedBy}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, inspectedBy: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Inspected By Date</label>
+                  <input
+                    type="text"
+                    placeholder="Date"
+                    value={maintenanceRecord.inspectedByDate}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, inspectedByDate: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Reflected By</label>
+                  <input
+                    type="text"
+                    placeholder="Reflected by name"
+                    value={maintenanceRecord.reflectedBy}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, reflectedBy: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Reflected By Date</label>
+                  <input
+                    type="text"
+                    placeholder="Date"
+                    value={maintenanceRecord.reflectedByDate}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, reflectedByDate: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Re-Inspected By</label>
+                  <input
+                    type="text"
+                    placeholder="Re-inspector name"
+                    value={maintenanceRecord.reInspectedBy}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, reInspectedBy: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>Re-Inspected By Date</label>
+                  <input
+                    type="text"
+                    placeholder="Date"
+                    value={maintenanceRecord.reInspectedByDate}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, reInspectedByDate: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label>CSS</label>
+                  <input
+                    type="text"
+                    placeholder="CSS name/value"
+                    value={maintenanceRecord.css}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, css: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 24 }}>
+                  <label>CSS Date</label>
+                  <input
+                    type="text"
+                    placeholder="Date"
+                    value={maintenanceRecord.cssDate}
+                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, cssDate: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, position: 'sticky', bottom: 0, backgroundColor: '#fff', paddingTop: 12, borderTop: '1px solid #e5e7eb' }}>
+                  <button
+                    className="btn primary"
+                    onClick={handleSaveEngineerInputs}
+                    disabled={savingEngineer}
+                  >
+                    {savingEngineer ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={() => setEditingEngineer(false)}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
 
-              <div style={{ marginBottom: 12 }}>
-                <label>Recommended Action</label>
-                <textarea
-                  placeholder="Recommended action"
-                  value={engineerInputs.recommendedAction}
-                  onChange={(e) => setEngineerInputs({ ...engineerInputs, recommendedAction: e.target.value })}
-                  rows={3}
-                />
-              </div>
-
-              <div style={{ marginBottom: 12 }}>
-                <label>Additional Remarks</label>
-                <textarea
-                  placeholder="Additional remarks"
-                  value={engineerInputs.additionalRemarks}
-                  onChange={(e) => setEngineerInputs({ ...engineerInputs, additionalRemarks: e.target.value })}
-                  rows={3}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  className="btn primary"
-                  onClick={handleSaveEngineerInputs}
-                  disabled={savingEngineer}
-                >
-                  {savingEngineer ? "Saving..." : "Save"}
-                </button>
-                <button
-                  className="btn"
-                  onClick={() => setEditingEngineer(false)}
-                >
-                  Cancel
-                </button>
+              {/* Right side - Thermal image with annotations */}
+              <div style={{ overflowY: 'auto', paddingRight: 12 }}>
+                <h4 style={{ marginTop: 0, marginBottom: 12 }}>Thermal Image</h4>
+                {thermal ? (
+                  <div style={{ position: 'relative', backgroundColor: '#000', borderRadius: '8px', overflow: 'hidden', display: 'inline-block', width: '100%' }}>
+                    <img
+                      id="thermal-form-img"
+                      src={thermal}
+                      alt="Thermal"
+                      style={{
+                        display: 'block',
+                        maxWidth: '100%',
+                        height: 'auto',
+                      }}
+                    />
+                    {/* Bounding boxes overlay */}
+                    {Array.isArray(thermalMeta?.boxes) && thermalMeta.boxes.length > 0 && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          pointerEvents: 'none',
+                        }}
+                      >
+                        {thermalMeta.boxes.map((b: any, idx: number) => {
+                          const [x1, y1, x2, y2] = b.n;
+                          const left = `${Math.min(x1, x2) * 100}%`;
+                          const top = `${Math.min(y1, y2) * 100}%`;
+                          const width = `${Math.abs(x2 - x1) * 100}%`;
+                          const height = `${Math.abs(y2 - y1) * 100}%`;
+                          return (
+                            <div
+                              key={idx}
+                              style={{
+                                position: 'absolute',
+                                left,
+                                top,
+                                width,
+                                height,
+                                border: `2px solid ${b.color || '#ff0000'}`,
+                                boxSizing: 'border-box',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  top: -22,
+                                  left: 0,
+                                  backgroundColor: b.color || '#ff0000',
+                                  color: '#fff',
+                                  padding: '2px 6px',
+                                  fontSize: '11px',
+                                  fontWeight: 'bold',
+                                  borderRadius: '2px',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {b.klass || 'Anomaly'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{
+                    backgroundColor: '#f3f4f6',
+                    padding: '40px 20px',
+                    textAlign: 'center',
+                    borderRadius: '8px',
+                    color: '#666',
+                    fontSize: '12px',
+                  }}>
+                    No thermal image available
+                  </div>
+                )}
+                
+                {/* Anomaly Details Below Image */}
+                {Array.isArray(thermalMeta?.boxes) && thermalMeta.boxes.length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <h5 style={{ marginTop: 0, marginBottom: 12, fontSize: '14px', fontWeight: '600' }}>Detected Anomalies</h5>
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      {thermalMeta.boxes.map((b: any, idx: number) => (
+                        <div
+                          key={idx}
+                          style={{
+                            backgroundColor: '#f9fafb',
+                            border: `1px solid ${b.color || '#ff0000'}`,
+                            borderLeft: `4px solid ${b.color || '#ff0000'}`,
+                            padding: '12px',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                            <div
+                              style={{
+                                width: 12,
+                                height: 12,
+                                backgroundColor: b.color || '#ff0000',
+                                borderRadius: '2px',
+                              }}
+                            />
+                            <span style={{ fontWeight: '600', color: '#1f2937' }}>
+                              {b.klass || 'Anomaly'} #{idx + 1}
+                            </span>
+                          </div>
+                          {b.confidence && (
+                            <div style={{ marginBottom: 4, color: '#666' }}>
+                              <strong>Confidence:</strong> {(b.confidence * 100).toFixed(1)}%
+                            </div>
+                          )}
+                          {b.details && (
+                            <div style={{ marginBottom: 4, color: '#666' }}>
+                              <strong>Details:</strong> {b.details}
+                            </div>
+                          )}
+                          <div style={{ color: '#666', fontSize: '12px' }}>
+                            <strong>Detection:</strong> {b.aiDetected !== false ? 'AI Detected' : 'Manually Selected'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
