@@ -1,9 +1,11 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+import "../styles/NavBar.css";
 
 export default function NavBar() {
-  const active: React.CSSProperties = { color: "white", fontWeight: 700 };
   const { username, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -17,25 +19,35 @@ export default function NavBar() {
       style={{
         display: "flex",
         alignItems: "center",
+        justifyContent: "space-between",
         gap: 16,
         marginBottom: 16,
       }}
     >
-      <Link to="/" style={{ fontWeight: 800, fontSize: 18 }}>
-        Transformer Admin
-      </Link>
       <nav style={{ display: "flex", gap: 12, flex: 1 }}>
         <NavLink
           to="/transformers"
-          style={({ isActive }) => (isActive ? active : undefined)}
+          className="nav-link"
         >
           Transformers
         </NavLink>
       </nav>
-      <div className="navbar-user">
-        <span>Welcome, {username}</span>
+      <div className="navbar-user" style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ color: "var(--muted)", fontSize: "12px" }}>Hello,</div>
+          <div style={{ color: "var(--accent)", fontSize: "14px", fontWeight: "600" }}>
+            {username}
+          </div>
+        </div>
         <button onClick={handleLogout} className="btn-logout">
           Logout
+        </button>
+        <button
+          onClick={toggleTheme}
+          className="theme-toggle-btn"
+          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+        >
+          {theme === 'dark' ? '☀️' : '🌙'}
         </button>
       </div>
     </div>

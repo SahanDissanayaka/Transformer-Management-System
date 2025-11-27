@@ -12,6 +12,7 @@ import com.TransformerUI.TransformerUI.transport.request.MaintenanceRecordReques
 import com.TransformerUI.TransformerUI.transport.response.ApiResponse;
 import com.TransformerUI.TransformerUI.transport.response.MaintenanceRecordResponse;
 import com.TransformerUI.TransformerUI.transport.response.ResponseCodeEnum;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +34,7 @@ public class MaintenanceRecordServiceImpl implements MaintenanceRecordService {
         this.inspectionDataRepository = inspectionDataRepository;
     }
 
+    @Transactional
     @Override
     public ApiResponse<Void> saveMaintenanceRecord(MaintenanceRecordRequest request) throws BaseException {
         try {
