@@ -3,7 +3,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 interface AuthContextType {
   isAuthenticated: boolean;
   username: string | null;
-  login: (username: string) => void;
+  role: string | null;
+  login: (username: string, role?: string | null) => void;
   logout: () => void;
 }
 
@@ -14,18 +15,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is already logged in
     const storedUsername = localStorage.getItem("username");
+    const storedRole = localStorage.getItem("role");
     if (storedUsername) {
       setIsAuthenticated(true);
       setUsername(storedUsername);
+      setRole(storedRole || null);
     }
   }, []);
 
-  const login = (username: string) => {
+  const login = (username: string, roleParam: string | null = null) => {
     localStorage.setItem("username", username);
+    if (roleParam) {
+      localStorage.setItem("role", roleParam);
+      setRole(roleParam);
+    }
     setUsername(username);
     setIsAuthenticated(true);
   };
@@ -33,11 +41,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = () => {
     setIsAuthenticated(false);
     setUsername(null);
+    setRole(null);
     localStorage.removeItem("username");
+    localStorage.removeItem("role");
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, username, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, username, role, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -5,20 +5,30 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface RegisterCredentials {
+  username: string;
+  password: string;
+  role: string;
+}
+
 export interface AuthResponse {
   responseCode: number;
   responseDescription: string;
-  responseData?: any;
+  responseData?: {
+    username: string;
+    role: string;
+  };
 }
 
 export interface User {
   username: string;
   password: string;
+  role: string;
 }
 
 export const authApi = {
   // Register a new user
-  register: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+  register: async (credentials: RegisterCredentials): Promise<AuthResponse> => {
     const response = await apiClient.post<AuthResponse>(
       '/transformer-thermal-inspection/login/save',
       credentials

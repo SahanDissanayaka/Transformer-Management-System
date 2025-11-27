@@ -51,7 +51,7 @@ export function AnomalyCard({
           alignItems: "center",
           gap: 10,
           padding: "10px 14px",
-          background: expanded ? "#ffffff" : "#f8fafc",
+          background: expanded ? "var(--card)" : "rgba(0, 212, 255, 0.05)",
           cursor: "pointer",
           userSelect: "none",
         }}
@@ -74,7 +74,7 @@ export function AnomalyCard({
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, color: "var(--text)" }}>
             {box.klass}
           </div>
           <div
@@ -83,7 +83,7 @@ export function AnomalyCard({
               alignItems: "center",
               gap: 6,
               fontSize: 12,
-              color: "#64748b",
+              color: "var(--muted)",
             }}
           >
             <span>{box.aiDetected === false ? "Not AI Detected" : "AI Detection"}</span>
@@ -163,8 +163,8 @@ export function AnomalyCard({
 
       {/* Expanded Content */}
       {expanded && (
-        <div style={{ padding: "0 20px 20px 20px", background: "#ffffff" }}>
-          <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 16 }}>
+        <div style={{ padding: "0 20px 20px 20px", background: "var(--card)" }}>
+          <div style={{ borderTop: "1px solid rgba(0, 212, 255, 0.2)", paddingTop: 16 }}>
             {/* Badge */}
             <div style={{ marginBottom: 16 }}>
               <div
@@ -174,12 +174,12 @@ export function AnomalyCard({
                   gap: 6,
                   padding: "6px 12px",
                   borderRadius: 8,
-                  background: "#f0f9ff",
-                  border: "1px solid #bae6fd",
+                  background: "rgba(0, 212, 255, 0.1)",
+                  border: "1px solid rgba(0, 212, 255, 0.3)",
                 }}
               >
                 <span
-                  style={{ fontSize: 13, fontWeight: 600, color: "#0369a1" }}
+                  style={{ fontSize: 13, fontWeight: 600, color: "var(--accent)" }}
                 >
                   {box.aiDetected
                     ? "AI Detected"
@@ -192,7 +192,7 @@ export function AnomalyCard({
 
             {/* Details */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>
                 BBox: ({x1.toFixed(3)}, {y1.toFixed(3)}) — ({x2.toFixed(3)},{" "}
                 {y2.toFixed(3)})
               </div>
@@ -207,7 +207,7 @@ export function AnomalyCard({
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span>👤</span>
-                  <span style={{ fontWeight: 600, color: "#475569" }}>
+                  <span style={{ fontWeight: 600, color: "var(--text)" }}>
                     Changed by:
                   </span>
                 </div>
@@ -254,8 +254,8 @@ export function AnomalyCard({
                     padding: "10px 16px",
                     borderRadius: 8,
                     border: "2px solid #6366f1",
-                    background: "#fff",
-                    color: "#4f46e5",
+                    background: "rgba(0, 212, 255, 0.15)",
+                    color: "var(--accent)",
                     fontWeight: 600,
                     cursor: "pointer",
                   }}
@@ -271,8 +271,8 @@ export function AnomalyCard({
                     padding: "10px 16px",
                     borderRadius: 8,
                     border: "2px solid #10b981",
-                    background: "#fff",
-                    color: "#047857",
+                    background: "rgba(16, 185, 129, 0.15)",
+                    color: "#10b981",
                     fontWeight: 600,
                     cursor: "pointer",
                   }}
@@ -290,9 +290,9 @@ export function AnomalyCard({
                   border:
                     action === "Approved"
                       ? "2px solid #059669"
-                      : "1px solid #d1fae5",
-                  background: action === "Approved" ? "#d1fae5" : "#ffffff",
-                  color: "#065f46",
+                      : "1px solid rgba(16, 185, 129, 0.3)",
+                  background: action === "Approved" ? "rgba(16, 185, 129, 0.2)" : "rgba(16, 185, 129, 0.08)",
+                  color: "#10b981",
                   fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
@@ -317,8 +317,8 @@ export function AnomalyCard({
                     padding: "10px 16px",
                     borderRadius: 8,
                     border: "2px solid #ef4444",
-                    background: "#fecaca",
-                    color: "#b91c1c",
+                    background: "rgba(239, 68, 68, 0.15)",
+                    color: "#ef4444",
                     fontWeight: 600,
                     cursor: "pointer",
                     transition: "all 0.2s ease",
@@ -337,9 +337,9 @@ export function AnomalyCard({
                   border:
                     action === "Pending"
                       ? "2px solid #6366f1"
-                      : "1px solid #e0e7ff",
-                  background: action === "Pending" ? "#e0e7ff" : "#ffffff",
-                  color: "#3730a3",
+                      : "1px solid rgba(99, 102, 241, 0.3)",
+                  background: action === "Pending" ? "rgba(99, 102, 241, 0.2)" : "rgba(99, 102, 241, 0.08)",
+                  color: "#6366f1",
                   fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
@@ -362,9 +362,9 @@ export function AnomalyCard({
                   border:
                     action === "Rejected"
                       ? "2px solid #dc2626"
-                      : "1px solid #fee2e2",
-                  background: action === "Rejected" ? "#fee2e2" : "#ffffff",
-                  color: "#991b1b",
+                      : "1px solid rgba(220, 38, 38, 0.3)",
+                  background: action === "Rejected" ? "rgba(220, 38, 38, 0.2)" : "rgba(220, 38, 38, 0.08)",
+                  color: "#dc2626",
                   fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
@@ -386,7 +386,7 @@ export function AnomalyCard({
               >
                 <span style={{ fontSize: 16 }}>📝</span>
                 <span
-                  style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}
+                  style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}
                 >
                   Notes
                 </span>
@@ -408,12 +408,12 @@ export function AnomalyCard({
                       style={{
                         padding: "10px 12px",
                         borderRadius: 8,
-                        border: "1px solid #e5e7eb",
-                        background: "#f8fafc",
+                        border: "1px solid rgba(0, 212, 255, 0.2)",
+                        background: "rgba(0, 212, 255, 0.08)",
                         fontSize: 13,
                       }}
                     >
-                      <div style={{ marginBottom: 6, color: "#475569" }}>
+                      <div style={{ marginBottom: 6, color: "var(--text)" }}>
                         {savedNote.text}
                       </div>
                       <div style={{ fontSize: 11, color: "#94a3b8" }}>
@@ -434,7 +434,9 @@ export function AnomalyCard({
                   minHeight: 60,
                   padding: 10,
                   borderRadius: 8,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid rgba(0, 212, 255, 0.3)",
+                  background: "rgba(0, 212, 255, 0.05)",
+                  color: "var(--text)",
                   fontSize: 13,
                   fontFamily: "inherit",
                   resize: "vertical",
@@ -474,9 +476,9 @@ export function AnomalyCard({
                   style={{
                     padding: "7px 14px",
                     borderRadius: 8,
-                    border: "1px solid #e5e7eb",
-                    background: "#ffffff",
-                    color: "#64748b",
+                    border: "1px solid rgba(0, 212, 255, 0.3)",
+                    background: "rgba(0, 212, 255, 0.1)",
+                    color: "var(--muted)",
                     fontWeight: 600,
                     cursor: "pointer",
                     fontSize: 13,

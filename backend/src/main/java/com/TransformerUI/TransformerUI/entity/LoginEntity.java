@@ -21,5 +21,5 @@ public class LoginEntity {
     private String username;
     private String password;
     @Builder.Default
-    private Boolean admin = false;
+    private String role = "viewer";
 }

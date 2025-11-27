@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 public class LoginResponse {
     private String username;
     private String password;
-    private Boolean admin;
+    private String role;
 }
