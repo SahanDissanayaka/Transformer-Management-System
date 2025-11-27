@@ -3094,14 +3094,24 @@ export default function InspectionDetailPage() {
 
       {/* Upload Section */}
       <div style={{ marginBottom: 24 }}>
-        <h3 style={{ marginTop: 0, display: "flex", alignItems: "center", gap: 10, fontSize: 20 }}>
+        <h3
+          style={{
+            marginTop: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            fontSize: 20,
+          }}
+        >
           <span style={{ fontSize: 22 }}>🖼️</span> Upload Images
           <span className="mode-badge">Assets</span>
         </h3>
         <div className="upload-section">
           {/* Baseline Upload Card */}
           <div className="upload-card">
-            <h4><span>📏</span>Baseline Image</h4>
+            <h4>
+              <span>📏</span>Baseline Image
+            </h4>
             <div className="upload-label">Weather</div>
             <select
               className="weather-select"
@@ -3113,7 +3123,9 @@ export default function InspectionDetailPage() {
               <option value="RAINY">Rainy 🌧️</option>
             </select>
             <label
-              className={`file-input-wrapper ${baselineDragActive ? "drag-active" : ""}`}
+              className={`file-input-wrapper ${
+                baselineDragActive ? "drag-active" : ""
+              }`}
               onDragOver={(e) => {
                 e.preventDefault();
               }}
@@ -3135,7 +3147,9 @@ export default function InspectionDetailPage() {
                 }
               }}
             >
-              <div style={{ fontWeight: 600, fontSize: 13 }}>Click or Drag to Select</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>
+                Click or Drag to Select
+              </div>
               <div className="file-hint">JPEG / PNG / WEBP</div>
               <input
                 type="file"
@@ -3164,7 +3178,9 @@ export default function InspectionDetailPage() {
           </div>
           {/* Maintenance / Thermal Upload Card */}
           <div className="upload-card">
-            <h4><span>🔥</span>Maintenance (Thermal)</h4>
+            <h4>
+              <span>🔥</span>Maintenance (Thermal)
+            </h4>
             <div className="upload-label">Weather</div>
             <select
               className="weather-select"
@@ -3176,7 +3192,9 @@ export default function InspectionDetailPage() {
               <option value="RAINY">Rainy 🌧️</option>
             </select>
             <label
-              className={`file-input-wrapper ${thermalDragActive ? "drag-active" : ""}`}
+              className={`file-input-wrapper ${
+                thermalDragActive ? "drag-active" : ""
+              }`}
               onDragOver={(e) => {
                 e.preventDefault();
               }}
@@ -3198,7 +3216,9 @@ export default function InspectionDetailPage() {
                 }
               }}
             >
-              <div style={{ fontWeight: 600, fontSize: 13 }}>Click or Drag to Select</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>
+                Click or Drag to Select
+              </div>
               <div className="file-hint">JPEG / PNG / WEBP</div>
               <input
                 type="file"
@@ -3221,7 +3241,9 @@ export default function InspectionDetailPage() {
                 disabled={submittingThermal}
                 style={{ flex: 1 }}
               >
-                {submittingThermal ? "Uploading & Detecting" : "Submit Maintenance"}
+                {submittingThermal
+                  ? "Uploading & Detecting"
+                  : "Submit Maintenance"}
               </button>
               <button
                 className="button-primary-outline"
