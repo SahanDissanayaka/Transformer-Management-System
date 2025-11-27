@@ -23,6 +23,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl
     show-sql: true
     properties:
       hibernate:
@@ -34,5 +37,3 @@ rest:
 
 python:
   exec: "C:\\Users\\Sahan\\AppData\\Local\\Programs\\Python\\Python310\\python.exe"
-
-

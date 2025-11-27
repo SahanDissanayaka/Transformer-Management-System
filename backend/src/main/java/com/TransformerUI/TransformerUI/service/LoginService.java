@@ -7,5 +7,5 @@ import com.TransformerUI.TransformerUI.transport.response.LoginResponse;
 
 public interface LoginService {
     ApiResponse<Void> saveLoginData(LoginRequest loginRequest) throws BaseException;
-    ApiResponse<LoginResponse> getUserById(Long id) throws BaseException;
+    ApiResponse<LoginResponse> verifyCredentials(LoginRequest loginRequest) throws BaseException;
 }
