@@ -2687,19 +2687,37 @@ export default function InspectionDetailPage() {
               <option value="CLOUDY">Cloudy</option>
               <option value="RAINY">Rainy</option>
             </select>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                setBaselineFile(f);
-              }}
-            />
-            {baselineFile && (
-              <div style={{ fontSize: 12, opacity: 0.8 }}>
-                Selected: <em>{baselineFile.name}</em>
-              </div>
-            )}
+            <div className="file-input-wrapper">
+              <input
+                type="file"
+                accept="image/*"
+                id="baseline-file-input"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setBaselineFile(f);
+                }}
+              />
+              <label htmlFor="baseline-file-input" className="file-input-label">
+                <span className="file-input-text">
+                  {baselineFile ? baselineFile.name : "Choose Baseline Image"}
+                </span>
+              </label>
+              {baselineFile && (
+                <div className="file-input-selected">
+                  <span className="file-input-selected-icon">✓</span>
+                  <span className="file-input-selected-name" title={baselineFile.name}>
+                    {baselineFile.name}
+                  </span>
+                  <button
+                    className="file-input-clear"
+                    onClick={() => setBaselineFile(null)}
+                    title="Clear selection"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               className="btn primary"
               onClick={() => handleSubmit("Baseline")}
@@ -2722,19 +2740,37 @@ export default function InspectionDetailPage() {
               <option value="CLOUDY">Cloudy</option>
               <option value="RAINY">Rainy</option>
             </select>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                setThermalFile(f);
-              }}
-            />
-            {thermalFile && (
-              <div style={{ fontSize: 12, opacity: 0.8 }}>
-                Selected: <em>{thermalFile.name}</em>
-              </div>
-            )}
+            <div className="file-input-wrapper">
+              <input
+                type="file"
+                accept="image/*"
+                id="thermal-file-input"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setThermalFile(f);
+                }}
+              />
+              <label htmlFor="thermal-file-input" className="file-input-label">
+                <span className="file-input-text">
+                  {thermalFile ? thermalFile.name : "Choose Maintenance Image"}
+                </span>
+              </label>
+              {thermalFile && (
+                <div className="file-input-selected">
+                  <span className="file-input-selected-icon">✓</span>
+                  <span className="file-input-selected-name" title={thermalFile.name}>
+                    {thermalFile.name}
+                  </span>
+                  <button
+                    className="file-input-clear"
+                    onClick={() => setThermalFile(null)}
+                    title="Clear selection"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <button
                 className="btn primary"

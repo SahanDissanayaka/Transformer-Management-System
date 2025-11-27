@@ -509,6 +509,146 @@ img.thumb {
     opacity: 0.85;
 }
 
+/* Custom File Input Styling */
+.file-input-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.file-input-wrapper input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.file-input-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.12) 0%, rgba(0, 212, 255, 0.08) 100%);
+    border: 2px dashed rgba(0, 212, 255, 0.5);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    user-select: none;
+    min-height: 66px;
+}
+
+.file-input-label:hover:not(.disabled) {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.18) 0%, rgba(0, 212, 255, 0.12) 100%);
+    border-color: rgba(0, 212, 255, 0.7);
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.file-input-label:active:not(.disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 212, 255, 0.2);
+}
+
+.file-input-label.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    color: var(--muted);
+}
+
+.file-input-icon {
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+}
+
+.file-input-text {
+    flex: 1;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-input-selected {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(0, 212, 255, 0.08);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text);
+}
+
+.file-input-selected-icon {
+    color: rgba(0, 212, 255, 0.7);
+    font-size: 16px;
+}
+
+.file-input-selected-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: rgba(0, 212, 255, 0.9);
+    font-weight: 500;
+}
+
+.file-input-clear {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(0, 212, 255, 0.6);
+    font-size: 16px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.file-input-clear:hover {
+    color: rgba(255, 100, 100, 0.8);
+}
+
+/* Light mode file input styling */
+[data-theme="light"] .file-input-label {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(14, 165, 233, 0.04) 100%);
+    border: 2px dashed rgba(14, 165, 233, 0.4);
+    color: #1e293b;
+}
+
+[data-theme="light"] .file-input-label:hover:not(.disabled) {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(14, 165, 233, 0.08) 100%);
+    border-color: rgba(14, 165, 233, 0.6);
+    box-shadow: 0 0 12px rgba(14, 165, 233, 0.15);
+}
+
+[data-theme="light"] .file-input-selected {
+    background: rgba(14, 165, 233, 0.08);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    color: #1e293b;
+}
+
+[data-theme="light"] .file-input-selected-name {
+    color: rgba(14, 165, 233, 0.8);
+}
+
+[data-theme="light"] .file-input-selected-icon {
+    color: rgba(14, 165, 233, 0.6);
+}
+
+[data-theme="light"] .file-input-clear:hover {
+    color: #ef4444;
+}
+
 /* Enhanced select styling */
 :not([data-theme="light"]) select {
     background: linear-gradient(135deg, rgba(0, 212, 255, 0.12) 0%, rgba(0, 212, 255, 0.08) 100%);
