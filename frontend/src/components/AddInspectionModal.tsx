@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { createInspection, updateInspection } from "../api/inspectionDataApi";
+import { useAuth } from "../context/AuthContext";
 
 export default function AddInspectionModal({ transformerNo, inspection, onClose, onSuccess }: any) {
   // Prefill state if editing
   const [branch, setBranch] = useState('');
   const [inspectionDate, setInspectionDate] = useState('');
   const [time, setTime] = useState('');
+
+  const { isAuthenticated, role, username } = useAuth();
 
   // When modal opens or inspection changes, populate state
   useEffect(() => {
@@ -35,15 +38,15 @@ const handleSubmit = async () => {
     const hour12 = hourNum % 12 || 12;
     const formattedTime = `${hour12}:${minutes} ${ampm}`;
 
-    // Build payload according to backend structure
+    // Build payload (basic inspection fields only)
     const payload = {
-      id: inspection?.id || 0,          // use existing id for update
+      id: inspection?.id || 0,
       transformerNo,
       branch,
       inspectionDate: formattedDate,
       time: formattedTime,
-      status: inspection?.status || "Pending", // keep existing status if editing
-      maintenanceDate: inspection?.maintenanceDate || null, // keep existing
+      status: inspection?.status || "Pending",
+      maintenanceDate: inspection?.maintenanceDate || null,
     };
 
     if (inspection) {

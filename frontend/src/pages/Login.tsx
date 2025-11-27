@@ -6,6 +6,7 @@ import "../styles/Login.css";
 const Login: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<string>("viewer");
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -41,7 +42,8 @@ const Login: React.FC = () => {
         if (response.responseCode == 2000) {
           // Successful login - set auth state
           console.log("Login successful, setting auth state");
-          login(username);
+          // include role selection for authorization
+          login(username, role);
           console.log("Auth state set, redirecting...");
           // Delay to ensure localStorage is written
           setTimeout(() => {
@@ -101,6 +103,19 @@ const Login: React.FC = () => {
               placeholder="Enter your password"
               disabled={isLoading}
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="role">Role</label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              disabled={isLoading}
+            >
+              <option value="viewer">Viewer</option>
+              <option value="engineer">Engineer</option>
+            </select>
           </div>
 
           <button type="submit" className="btn-primary" disabled={isLoading}>

@@ -195,6 +195,13 @@ img.thumb {
     position: relative;
 }
 
+/* Make modal a column so footer stays visible and body can scroll */
+.modal {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
 /* Modal header */
 .modal-header {
     display: flex;
@@ -239,6 +246,12 @@ img.thumb {
     margin-bottom: 4px;
     border: 1px solid #ccc;
     border-radius: 4px;
+}
+
+/* Allow modal body to scroll if content is tall */
+.modal-body {
+    overflow: auto;
+    flex: 1 1 auto;
 }
 
 /* Modal footer */

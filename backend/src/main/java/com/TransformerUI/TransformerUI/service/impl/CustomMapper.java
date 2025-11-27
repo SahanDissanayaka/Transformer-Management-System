@@ -46,6 +46,12 @@ public class CustomMapper {
                 .transformerNo(request.getTransformerNo())
                 .inspectedDate(inspectedDate)
                 .status("Pending") // default
+                .inspectorName(request.getInspectorName())
+                .engineerStatus(request.getEngineerStatus())
+                .voltage(request.getVoltage())
+                .current(request.getCurrent())
+                .recommendedAction(request.getRecommendedAction())
+                .additionalRemarks(request.getAdditionalRemarks())
                 .build();
     }
 
@@ -61,6 +67,25 @@ public class CustomMapper {
         if (request.getInspectionDate() != null && request.getTime() != null) {
             String inspectedDate = formatInspectionDate(request.getInspectionDate(), request.getTime());
             existingEntity.setInspectedDate(inspectedDate);
+        }
+
+        if (request.getInspectorName() != null) {
+            existingEntity.setInspectorName(request.getInspectorName());
+        }
+        if (request.getEngineerStatus() != null) {
+            existingEntity.setEngineerStatus(request.getEngineerStatus());
+        }
+        if (request.getVoltage() != null) {
+            existingEntity.setVoltage(request.getVoltage());
+        }
+        if (request.getCurrent() != null) {
+            existingEntity.setCurrent(request.getCurrent());
+        }
+        if (request.getRecommendedAction() != null) {
+            existingEntity.setRecommendedAction(request.getRecommendedAction());
+        }
+        if (request.getAdditionalRemarks() != null) {
+            existingEntity.setAdditionalRemarks(request.getAdditionalRemarks());
         }
     }
 
