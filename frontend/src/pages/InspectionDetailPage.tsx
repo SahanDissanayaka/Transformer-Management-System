@@ -1,5 +1,6 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "../context/AuthContext";
 import { uploadImage, viewImage, type ImgType, type Weather } from "../api/imageDataApi";
 import { loadFeedbackLogs as loadFeedbackLogsAPI } from "../api/detectionApi";
 import { AnomaliesList } from "../components/inspection/AnomaliesList";
@@ -72,8 +73,80 @@ export default function InspectionDetailPage() {
   const [notesList, setNotesList] = useState<
     Array<{ text: string; by: string; at: string }>
   >([]);
+  
+  // Engineer inputs
+  const [engineerInputs, setEngineerInputs] = useState({
+    inspectorName: "",
+    engineerStatus: "OK",
+    voltage: "",
+    current: "",
+    recommendedAction: "",
+    additionalRemarks: "",
+  });
+  const [editingEngineer, setEditingEngineer] = useState(false);
+  const [savingEngineer, setSavingEngineer] = useState(false);
+  
+  // inspection passed from navigation state (optional)
+  const location = useLocation();
+  const passedInspection: any = (location && (location as any).state && (location as any).state.inspection) || null;
+  const { username, role, isAuthenticated } = useAuth();
+  const canEditEngineer = isAuthenticated && role === 'engineer';
 
-  // Load images
+  useEffect(() => {
+    if (passedInspection) {
+      setEngineerInputs({
+        inspectorName: passedInspection.inspectorName || "",
+        engineerStatus: passedInspection.engineerStatus || "OK",
+        voltage: passedInspection.voltage || "",
+        current: passedInspection.current || "",
+        recommendedAction: passedInspection.recommendedAction || "",
+        additionalRemarks: passedInspection.additionalRemarks || "",
+      });
+    }
+  }, [passedInspection]);
+
+  const handleSaveEngineerInputs = async () => {
+    if (!passedInspection || !passedInspection.id) {
+      alert("Cannot save: inspection not found.");
+      return;
+    }
+    setSavingEngineer(true);
+    try {
+      const payload = {
+        id: passedInspection.id,
+        transformerNo: passedInspection.transformerNo,
+        branch: passedInspection.branch,
+        inspectionDate: passedInspection.inspectionDate,
+        time: passedInspection.time,
+        status: passedInspection.status,
+        maintenanceDate: passedInspection.maintenanceDate,
+        ...engineerInputs,
+      };
+      // Use updateInspection from api
+      const { updateInspection } = await import("../api/inspectionDataApi");
+      await updateInspection(payload);
+      
+      // Close edit mode and keep the updated state (already set in engineerInputs)
+      setEditingEngineer(false);
+      
+      // Show brief success message
+      const successMsg = document.createElement('div');
+      successMsg.textContent = '✅ Saved';
+      successMsg.style.cssText = 'position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:12px 20px;border-radius:6px;z-index:9999;font-weight:bold;';
+      document.body.appendChild(successMsg);
+      setTimeout(() => successMsg.remove(), 2000);
+    } catch (error) {
+      console.error("Failed to save engineer inputs:", error);
+      // Show error message
+      const errorMsg = document.createElement('div');
+      errorMsg.textContent = '❌ Failed to save';
+      errorMsg.style.cssText = 'position:fixed;top:20px;right:20px;background:#ef4444;color:white;padding:12px 20px;border-radius:6px;z-index:9999;font-weight:bold;';
+      document.body.appendChild(errorMsg);
+      setTimeout(() => errorMsg.remove(), 3000);
+    } finally {
+      setSavingEngineer(false);
+    }
+  };
   // Load feedback logs
   const loadFeedbackLogs = useCallback(async () => {
     try {
@@ -233,6 +306,135 @@ export default function InspectionDetailPage() {
           Transformer: <strong>{transformerNo}</strong>
         </div>
       </div>
+
+      {/* Engineer Inputs Button */}
+      {canEditEngineer && (
+        <div style={{ marginBottom: 16 }}>
+          <button 
+            className="btn primary" 
+            onClick={() => setEditingEngineer(true)}
+          >
+            ✏️ Edit Engineer Inputs
+          </button>
+        </div>
+      )}
+
+      {/* Engineer Inputs Modal */}
+      {editingEngineer && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+        }}>
+          <div className="card" style={{
+            maxWidth: '600px',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            padding: '24px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0 }}>Engineer Inputs</h3>
+              <button 
+                className="btn"
+                onClick={() => setEditingEngineer(false)}
+                style={{ padding: '6px 12px', fontSize: '14px', background: '#e5e7eb', border: 'none', cursor: 'pointer', borderRadius: '4px' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div>
+              <div style={{ marginBottom: 12 }}>
+                <label>Inspector Name</label>
+                <input
+                  type="text"
+                  placeholder="Inspector name"
+                  value={engineerInputs.inspectorName}
+                  onChange={(e) => setEngineerInputs({ ...engineerInputs, inspectorName: e.target.value })}
+                />
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <label>Transformer Status</label>
+                <select
+                  value={engineerInputs.engineerStatus}
+                  onChange={(e) => setEngineerInputs({ ...engineerInputs, engineerStatus: e.target.value })}
+                >
+                  <option value="OK">OK</option>
+                  <option value="Needs Maintenance">Needs Maintenance</option>
+                  <option value="Urgent Attention">Urgent Attention</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div>
+                  <label>Voltage (V)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="Voltage"
+                    value={engineerInputs.voltage}
+                    onChange={(e) => setEngineerInputs({ ...engineerInputs, voltage: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label>Current (A)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="Current"
+                    value={engineerInputs.current}
+                    onChange={(e) => setEngineerInputs({ ...engineerInputs, current: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <label>Recommended Action</label>
+                <textarea
+                  placeholder="Recommended action"
+                  value={engineerInputs.recommendedAction}
+                  onChange={(e) => setEngineerInputs({ ...engineerInputs, recommendedAction: e.target.value })}
+                  rows={3}
+                />
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <label>Additional Remarks</label>
+                <textarea
+                  placeholder="Additional remarks"
+                  value={engineerInputs.additionalRemarks}
+                  onChange={(e) => setEngineerInputs({ ...engineerInputs, additionalRemarks: e.target.value })}
+                  rows={3}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  className="btn primary"
+                  onClick={handleSaveEngineerInputs}
+                  disabled={savingEngineer}
+                >
+                  {savingEngineer ? "Saving..." : "Save"}
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => setEditingEngineer(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error Message */}
       {errorMsg && (
@@ -907,7 +1109,7 @@ export default function InspectionDetailPage() {
             className="btn primary"
             onClick={() => {
               if (notes.trim()) {
-                const userName = localStorage.getItem("userName") || "User";
+                const userName = username || localStorage.getItem("username") || "User";
                 setNotesList((prev) => [
                   ...prev,
                   {

@@ -102,6 +102,10 @@ export default function TransformerDetailPage() {
               <th>Inspected Date</th>
               <th>Maintenance Date</th>
               <th>Status</th>
+              <th>Inspector</th>
+              <th>Eng. Status</th>
+              <th>V / A</th>
+              <th>Recommended</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -115,6 +119,10 @@ export default function TransformerDetailPage() {
                 <td>
                   <span className="badge">{insp.status}</span>
                 </td>
+                <td>{insp.inspectorName || '-'}</td>
+                <td>{insp.engineerStatus || '-'}</td>
+                <td>{(insp.voltage || '-') + ' / ' + (insp.current || '-')}</td>
+                <td style={{maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}} title={insp.recommendedAction || ''}>{insp.recommendedAction || '-'}</td>
                 <td>
                   <button
                     className="btn small"
