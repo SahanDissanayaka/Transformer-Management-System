@@ -116,6 +116,13 @@ public class InspectionDataServiceImpl implements InspectionDataService {
                         dto.setMaintenanceDate(entity.getMaintenanceDate());
                         dto.setStatus(entity.getStatus());
                         dto.setBranch(entity.getBranch()); // ✅ FIXED: Add branch here
+                        // engineer fields
+                        dto.setInspectorName(entity.getInspectorName());
+                        dto.setEngineerStatus(entity.getEngineerStatus());
+                        dto.setVoltage(entity.getVoltage());
+                        dto.setCurrent(entity.getCurrent());
+                        dto.setRecommendedAction(entity.getRecommendedAction());
+                        dto.setAdditionalRemarks(entity.getAdditionalRemarks());
                         return dto;
                     })
                     .toList();
