@@ -23,6 +23,7 @@ import {
   mapAnomaliestoBoxes,
 } from "../utils/inspectionHelpers";
 import { CLASS_COLORS } from "../constants/inspection.constants";
+import { buildExportPayload, downloadJson, downloadCsv } from "../utils/exportFeedback";
 import type {
   Box,
   ThermalMeta,
@@ -180,14 +181,14 @@ export default function InspectionDetailPage() {
             const normalizedInspection = {
               ...inspectionData,
               transformerNo: inspectionData.transformerNo || transformerNo,
+              inspectionDate:
+                inspectionData.inspectionDate || inspectionData.inspectedDate,
             };
-            // Explicitly set inspectionDate to ensure it's not undefined
-            normalizedInspection.inspectionDate =
-              inspectionData.inspectionDate ||
-              inspectionData.inspectedDate ||
-              "";
-
             setCurrentInspection(normalizedInspection);
+            console.log(
+              "Fetched inspection from database:",
+              normalizedInspection
+            );
           }
         } catch (error) {
           console.error("Error fetching inspection:", error);
@@ -196,13 +197,9 @@ export default function InspectionDetailPage() {
         const normalizedInspection = {
           ...passedInspection,
           transformerNo: passedInspection.transformerNo || transformerNo,
+          inspectionDate:
+            passedInspection.inspectionDate || passedInspection.inspectedDate,
         };
-        // Explicitly set inspectionDate to ensure it's not undefined
-        normalizedInspection.inspectionDate =
-          passedInspection.inspectionDate ||
-          passedInspection.inspectedDate ||
-          "";
-
         setCurrentInspection(normalizedInspection);
       }
 
@@ -235,14 +232,14 @@ export default function InspectionDetailPage() {
   // Fetch maintenance record from database
   useEffect(() => {
     const fetchMaintenanceRecord = async () => {
-      if (currentInspection?.id) {
+      if ((currentInspection as any)?.id) {
         try {
           console.log(
             "Fetching maintenance record for inspection ID:",
-            currentInspection.id
+            (currentInspection as any).id
           );
           const response = await maintenanceApi.getByInspectionId(
-            currentInspection.id
+            (currentInspection as any).id
           );
           console.log("Maintenance record fetch response:", response);
 
@@ -362,11 +359,8 @@ export default function InspectionDetailPage() {
     // Create a canvas with the thermal image and bounding boxes
     let thermalImageWithBoxes = thermal;
 
-    if (
-      thermal &&
-      Array.isArray(thermalMeta?.boxes) &&
-      thermalMeta.boxes.length > 0
-    ) {
+    const boxes = thermalMeta?.boxes;
+    if (thermal && Array.isArray(boxes) && boxes.length > 0) {
       try {
         const img = new Image();
         img.crossOrigin = "anonymous";
@@ -383,7 +377,7 @@ export default function InspectionDetailPage() {
               ctx.drawImage(img, 0, 0);
 
               // Draw bounding boxes
-              thermalMeta.boxes.forEach((box: any) => {
+              boxes.forEach((box: any) => {
                 if (box.n && Array.isArray(box.n) && box.n.length === 4) {
                   const [x1, y1, x2, y2] = box.n;
                   const left = Math.min(x1, x2) * img.width;
@@ -790,7 +784,7 @@ export default function InspectionDetailPage() {
   };
 
   const handleSaveEngineerInputs = async () => {
-    if (!currentInspection || !currentInspection.id) {
+      if (!currentInspection || !(currentInspection as any).id) {
       alert("Cannot save: inspection not found.");
       return;
     }
@@ -798,7 +792,7 @@ export default function InspectionDetailPage() {
     try {
       // Save engineer inputs
       const engineerPayload = {
-        id: currentInspection.id,
+        id: (currentInspection as any).id,
         transformerNo: transformerNo,
         branch: currentInspection.branch,
         inspectionDate: currentInspection.inspectionDate,
@@ -817,7 +811,7 @@ export default function InspectionDetailPage() {
       if (hasMaintenanceData) {
         const maintenancePayload = {
           ...(maintenanceRecordId && { id: maintenanceRecordId }),
-          inspectionId: currentInspection.id,
+          inspectionId: (currentInspection as any).id,
           // Include transformer and inspection details
           transformerNo: transformerNo,
           poleNo: transformer?.poleNo || "",
@@ -839,9 +833,14 @@ export default function InspectionDetailPage() {
             // Create new record
             console.log("Creating new maintenance record");
             response = await maintenanceApi.save(maintenancePayload);
-            // Store the new ID if returned
-            if (response.responseData && response.responseData.id) {
-              setMaintenanceRecordId(response.responseData.id);
+            // Store the new ID if returned (responseData may be array or object)
+            if (response.responseData) {
+              const data = Array.isArray(response.responseData)
+                ? response.responseData[0]
+                : response.responseData;
+              if (data && (data as any).id) {
+                setMaintenanceRecordId((data as any).id);
+              }
             }
           }
 
@@ -886,12 +885,42 @@ export default function InspectionDetailPage() {
   const loadFeedbackLogs = useCallback(async () => {
     try {
       const response = await loadFeedbackLogsAPI(transformerNo!, inspectionNo!);
-      if (response?.responseCode === "2000" && response.responseData?.logs) {
+      if (
+        (response?.responseCode === "2000" || response?.responseCode === 2000) &&
+        response.responseData?.logs
+      ) {
         const logs =
           typeof response.responseData.logs === "string"
             ? JSON.parse(response.responseData.logs)
             : response.responseData.logs;
-        setFeedbackLog(Array.isArray(logs) ? logs : [logs]);
+        const normalizedLogs = Array.isArray(logs) ? logs : [logs];
+        setFeedbackLog(normalizedLogs);
+
+        // Extract deletions from logs into removedAnomalies so they persist
+        const deletions = (normalizedLogs || []).filter(
+          (l: any) => l.userModification && l.userModification.action === "deleted"
+        );
+        if (deletions.length > 0) {
+          const removed = deletions.map((d: any, i: number) => {
+            const orig = d.originalAIDetection || {};
+            const um = d.userModification || {};
+            return {
+              idx: Date.now() + i,
+              n: orig.box || [0, 0, 0, 0],
+              klass: orig.class || "Unknown",
+              color: CLASS_COLORS[orig.class] || CLASS_COLORS.default,
+              conf: orig.confidence || 0,
+              aiDetected: true,
+              rejectedBy: um.modifiedBy || um.addedBy || "",
+              rejectedAt: um.modifiedAt || um.addedAt || "",
+            } as Box;
+          });
+          setRemovedAnomalies((prev) => {
+            // avoid duplicates by bbox string
+            const existingKeys = new Set(prev.map((p) => p.n.join(",")));
+            return [...prev, ...removed.filter((r: any) => !existingKeys.has(r.n.join(",")))];
+          });
+        }
       }
     } catch (error) {
       console.error("Error loading feedback logs:", error);
@@ -931,7 +960,33 @@ export default function InspectionDetailPage() {
                 typeof r.responseData.logs === "string"
                   ? JSON.parse(r.responseData.logs)
                   : r.responseData.logs;
-              setFeedbackLog(Array.isArray(logs) ? logs : [logs]);
+              const normalizedLogs = Array.isArray(logs) ? logs : [logs];
+              setFeedbackLog(normalizedLogs);
+
+              // also initialize removed anomalies from any deletion logs
+              const deletions = (normalizedLogs || []).filter(
+                (l: any) => l.userModification && l.userModification.action === "deleted"
+              );
+              if (deletions.length > 0) {
+                const removed = deletions.map((d: any, i: number) => {
+                  const orig = d.originalAIDetection || {};
+                  const um = d.userModification || {};
+                  return {
+                    idx: Date.now() + i,
+                    n: orig.box || [0, 0, 0, 0],
+                    klass: orig.class || "Unknown",
+                    color: CLASS_COLORS[orig.class] || CLASS_COLORS.default,
+                    conf: orig.confidence || 0,
+                    aiDetected: true,
+                    rejectedBy: um.modifiedBy || um.addedBy || "",
+                    rejectedAt: um.modifiedAt || um.addedAt || "",
+                  } as Box;
+                });
+                setRemovedAnomalies((prev) => {
+                  const existingKeys = new Set(prev.map((p) => p.n.join(",")));
+                  return [...prev, ...removed.filter((r: any) => !existingKeys.has(r.n.join(",")))];
+                });
+              }
             }
           }
         }
@@ -1152,360 +1207,327 @@ export default function InspectionDetailPage() {
                 minHeight: 0,
               }}
             >
-              {/* Left side - Form inputs and buttons */}
+              {/* Left side - Form inputs - Scrollable */}
               <div
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  height: "100%",
-                  gap: "0",
-                  minHeight: 0,
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  backgroundColor: "rgba(0, 212, 255, 0.05)",
+                  border: "1px solid rgba(0, 212, 255, 0.2)",
+                  borderRadius: "8px",
+                  padding: "20px",
+                  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                  maxHeight: "100%",
                 }}
               >
-                {/* Scrollable form content */}
-                <div
+                {/* ===== Engineer Fields ===== */}
+                <h5
                   style={{
-                    flex: 1,
-                    minHeight: 0,
-                    overflowY: "auto",
-                    overflowX: "hidden",
-                    backgroundColor: "rgba(0, 212, 255, 0.05)",
-                    border: "1px solid rgba(0, 212, 255, 0.2)",
-                    borderRadius: "8px 8px 0 0",
-                    padding: "20px",
-                    boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                    marginTop: 0,
+                    marginBottom: 20,
+                    fontSize: "18px",
+                    fontWeight: "700",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  {/* ===== Engineer Fields ===== */}
-                  <h5
-                    style={{
-                      marginTop: 0,
-                      marginBottom: 20,
-                      fontSize: "18px",
-                      fontWeight: "700",
-                      color: "var(--text)",
-                      paddingBottom: "12px",
-                      borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    <span style={{ fontSize: "20px" }}>📄</span> Inspection
-                    Details
-                  </h5>
+                  <span style={{ fontSize: "20px" }}>📄</span> Inspection
+                  Details
+                </h5>
 
-                  {/* Read-only inspection info */}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr 1fr",
-                      gap: 16,
-                      marginBottom: 20,
-                    }}
-                  >
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Transformer No
-                      </label>
-                      <input
-                        type="text"
-                        value={transformerNo || ""}
-                        disabled
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          cursor: "not-allowed",
-                          color: "var(--muted)",
-                          borderColor: "rgba(0, 212, 255, 0.3)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontStyle: "italic",
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Pole No
-                      </label>
-                      <input
-                        type="text"
-                        value={transformer?.poleNo || ""}
-                        disabled
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          cursor: "not-allowed",
-                          color: "var(--muted)",
-                          borderColor: "rgba(0, 212, 255, 0.3)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontStyle: "italic",
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Branch
-                      </label>
-                      <input
-                        type="text"
-                        value={currentInspection?.branch || ""}
-                        disabled
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          cursor: "not-allowed",
-                          color: "var(--muted)",
-                          borderColor: "rgba(0, 212, 255, 0.3)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontStyle: "italic",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 16,
-                      marginBottom: 20,
-                    }}
-                  >
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Date of Inspection
-                      </label>
-                      <input
-                        type="text"
-                        value={(() => {
-                          const dateStr =
-                            currentInspection?.inspectionDate ||
-                            currentInspection?.inspectedDate ||
-                            "";
-
-                          if (!dateStr) return "";
-
-                          const dateString = String(dateStr);
-
-                          // Handle ISO format (2025-10-03T15:17:00)
-                          if (/\d{4}-\d{2}-\d{2}T/.test(dateString)) {
-                            return dateString.split("T")[0];
-                          }
-
-                          // Handle formatted string like "Thu(20), Nov, 2025 07:14 AM"
-                          // Extract just the date part (remove time)
-                          const timePattern = /\s+\d{1,2}:\d{2}\s*(AM|PM)?/i;
-                          return dateString.replace(timePattern, "").trim();
-                        })()}
-                        disabled
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          cursor: "not-allowed",
-                          color: "var(--muted)",
-                          borderColor: "rgba(0, 212, 255, 0.3)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontStyle: "italic",
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Time
-                      </label>
-                      <input
-                        type="text"
-                        value={(() => {
-                          // First check if time field exists separately
-                          if (currentInspection?.time)
-                            return currentInspection.time;
-                          // Extract time from formatted date string
-                          const dateStr =
-                            currentInspection?.inspectionDate || "";
-                          const timeMatch = dateStr.match(
-                            /\d{1,2}:\d{2}\s*(AM|PM)?/i
-                          );
-                          return timeMatch ? timeMatch[0] : "";
-                        })()}
-                        disabled
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          cursor: "not-allowed",
-                          color: "var(--muted)",
-                          borderColor: "rgba(0, 212, 255, 0.3)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontStyle: "italic",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 16,
-                      marginBottom: 20,
-                    }}
-                  >
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Location Details
-                      </label>
-                      <input
-                        type="text"
-                        value={transformer?.locationDetails || ""}
-                        disabled
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          cursor: "not-allowed",
-                          color: "var(--muted)",
-                          borderColor: "rgba(0, 212, 255, 0.3)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontStyle: "italic",
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Type
-                      </label>
-                      <input
-                        type="text"
-                        value={transformer?.type || ""}
-                        disabled
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          cursor: "not-allowed",
-                          color: "var(--muted)",
-                          borderColor: "rgba(0, 212, 255, 0.3)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontStyle: "italic",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <h5
-                    style={{
-                      marginTop: 28,
-                      marginBottom: 20,
-                      fontSize: "18px",
-                      fontWeight: "700",
-                      color: "var(--text)",
-                      paddingBottom: "12px",
-                      borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    <span style={{ fontSize: "20px" }}>👷</span> Engineer
-                    Information
-                  </h5>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Inspected by
-                    </label>
+                {/* Read-only inspection info */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: 16,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Transformer No</label>
                     <input
                       type="text"
-                      placeholder="Inspected by"
-                      value={engineerInputs.inspectorName}
+                      value={transformerNo || ""}
+                      disabled
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Pole No</label>
+                    <input
+                      type="text"
+                      value={transformer?.poleNo || ""}
+                      disabled
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Branch</label>
+                    <input
+                      type="text"
+                      value={currentInspection?.branch || ""}
+                      disabled
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 16,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Date of Inspection</label>
+                    <input
+                      type="text"
+                      value={(() => {
+                        const dateStr = currentInspection?.inspectionDate || "";
+                        if (!dateStr) return "";
+                        // Handle ISO format (2025-10-03T15:17:00)
+                        if (dateStr.includes("T")) {
+                          return dateStr.split("T")[0];
+                        }
+                        // Handle formatted string like "Fri(03), Oct, 2025 03:17 PM"
+                        // Extract just the date part (everything before time)
+                        const timePattern = /\d{1,2}:\d{2}\s*(AM|PM)?/i;
+                        if (timePattern.test(dateStr)) {
+                          return dateStr.replace(timePattern, "").trim();
+                        }
+                        return dateStr;
+                      })()}
+                      disabled
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Time</label>
+                    <input
+                      type="text"
+                      value={(() => {
+                        // First check if time field exists separately
+                        if (currentInspection?.time)
+                          return currentInspection.time;
+                        // Extract time from formatted date string
+                        const dateStr = currentInspection?.inspectionDate || "";
+                        const timeMatch = dateStr.match(
+                          /\d{1,2}:\d{2}\s*(AM|PM)?/i
+                        );
+                        return timeMatch ? timeMatch[0] : "";
+                      })()}
+                      disabled
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 16,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Location Details</label>
+                    <input
+                      type="text"
+                      value={transformer?.locationDetails || ""}
+                      disabled
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Type</label>
+                    <input
+                      type="text"
+                      value={transformer?.type || ""}
+                      disabled
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <h5
+                  style={{
+                    marginTop: 28,
+                    marginBottom: 20,
+                    fontSize: "18px",
+                    fontWeight: "700",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  <span style={{ fontSize: "20px" }}>👷</span> Engineer
+                  Information
+                </h5>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Inspected by</label>
+                  <input
+                    type="text"
+                    placeholder="Inspected by"
+                    value={engineerInputs.inspectorName}
+                    onChange={(e) =>
+                      setEngineerInputs({
+                        ...engineerInputs,
+                        inspectorName: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Transformer Status</label>
+                  <select
+                    value={engineerInputs.engineerStatus}
+                    onChange={(e) =>
+                      setEngineerInputs({
+                        ...engineerInputs,
+                        engineerStatus: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="OK">OK</option>
+                    <option value="Needs Maintenance">Needs Maintenance</option>
+                    <option value="Urgent Attention">Urgent Attention</option>
+                  </select>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 16,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Voltage (V)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Voltage"
+                      value={engineerInputs.voltage}
                       onChange={(e) =>
                         setEngineerInputs({
                           ...engineerInputs,
-                          inspectorName: e.target.value,
+                          voltage: e.target.value,
                         })
                       }
                       style={{
@@ -1521,1218 +1543,17 @@ export default function InspectionDetailPage() {
                       }}
                     />
                   </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Transformer Status
-                    </label>
-                    <select
-                      value={engineerInputs.engineerStatus}
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Current (A)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Current"
+                      value={engineerInputs.current}
                       onChange={(e) =>
                         setEngineerInputs({
                           ...engineerInputs,
-                          engineerStatus: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <option value="OK">OK</option>
-                      <option value="Needs Maintenance">
-                        Needs Maintenance
-                      </option>
-                      <option value="Urgent Attention">Urgent Attention</option>
-                    </select>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 16,
-                      marginBottom: 20,
-                    }}
-                  >
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Voltage (V)
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        placeholder="Voltage"
-                        value={engineerInputs.voltage}
-                        onChange={(e) =>
-                          setEngineerInputs({
-                            ...engineerInputs,
-                            voltage: e.target.value,
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "var(--text)",
-                          transition: "all 0.3s ease",
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Current (A)
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        placeholder="Current"
-                        value={engineerInputs.current}
-                        onChange={(e) =>
-                          setEngineerInputs({
-                            ...engineerInputs,
-                            current: e.target.value,
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "var(--text)",
-                          transition: "all 0.3s ease",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Recommended Action
-                    </label>
-                    <textarea
-                      placeholder="Recommended action"
-                      value={engineerInputs.recommendedAction}
-                      onChange={(e) =>
-                        setEngineerInputs({
-                          ...engineerInputs,
-                          recommendedAction: e.target.value,
-                        })
-                      }
-                      rows={3}
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                        fontFamily: "inherit",
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Additional Remarks
-                    </label>
-                    <textarea
-                      placeholder="Additional remarks"
-                      value={engineerInputs.additionalRemarks}
-                      onChange={(e) =>
-                        setEngineerInputs({
-                          ...engineerInputs,
-                          additionalRemarks: e.target.value,
-                        })
-                      }
-                      rows={3}
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                        fontFamily: "inherit",
-                      }}
-                    />
-                  </div>
-
-                  {/* ===== IR Readings ===== */}
-                  <h5
-                    style={{
-                      marginTop: 28,
-                      marginBottom: 20,
-                      fontSize: "18px",
-                      fontWeight: "700",
-                      color: "var(--text)",
-                      paddingBottom: "12px",
-                      borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    <span style={{ fontSize: "20px" }}>🌡️</span> Infrared
-                    Readings
-                  </h5>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr 1fr",
-                      gap: 16,
-                      marginBottom: 20,
-                    }}
-                  >
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        IR Left
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Left"
-                        value={maintenanceRecord.irLeft}
-                        onChange={(e) =>
-                          setMaintenanceRecord({
-                            ...maintenanceRecord,
-                            irLeft: e.target.value,
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "var(--text)",
-                          transition: "all 0.3s ease",
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        IR Right
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Right"
-                        value={maintenanceRecord.irRight}
-                        onChange={(e) =>
-                          setMaintenanceRecord({
-                            ...maintenanceRecord,
-                            irRight: e.target.value,
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "var(--text)",
-                          transition: "all 0.3s ease",
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        IR Front
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Front"
-                        value={maintenanceRecord.irFront}
-                        onChange={(e) =>
-                          setMaintenanceRecord({
-                            ...maintenanceRecord,
-                            irFront: e.target.value,
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "var(--text)",
-                          transition: "all 0.3s ease",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* ===== Power Readings ===== */}
-                  <h5
-                    style={{
-                      marginTop: 28,
-                      marginBottom: 20,
-                      fontSize: "18px",
-                      fontWeight: "700",
-                      color: "var(--text)",
-                      paddingBottom: "12px",
-                      borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    <span style={{ fontSize: "20px" }}>⚡</span> Power Readings
-                  </h5>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Last Month KVA
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Last month KVA"
-                      value={maintenanceRecord.lastMonthKva}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          lastMonthKva: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 16,
-                      marginBottom: 20,
-                    }}
-                  >
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Last Month Date
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Date"
-                        value={maintenanceRecord.lastMonthDate}
-                        onChange={(e) =>
-                          setMaintenanceRecord({
-                            ...maintenanceRecord,
-                            lastMonthDate: e.target.value,
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "var(--text)",
-                          transition: "all 0.3s ease",
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Last Month Time
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Time"
-                        value={maintenanceRecord.lastMonthTime}
-                        onChange={(e) =>
-                          setMaintenanceRecord({
-                            ...maintenanceRecord,
-                            lastMonthTime: e.target.value,
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "var(--text)",
-                          transition: "all 0.3s ease",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Current Month KVA
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Current month KVA"
-                      value={maintenanceRecord.currentMonthKva}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          currentMonthKva: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  {/* ===== Equipment Details ===== */}
-                  <h5
-                    style={{
-                      marginTop: 28,
-                      marginBottom: 20,
-                      fontSize: "18px",
-                      fontWeight: "700",
-                      color: "var(--text)",
-                      paddingBottom: "12px",
-                      borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    <span style={{ fontSize: "20px" }}>⚙️</span> Equipment
-                    Details
-                  </h5>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Serial No
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Serial number"
-                      value={maintenanceRecord.serial}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          serial: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 16,
-                      marginBottom: 20,
-                    }}
-                  >
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Meter CT Ratio
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="CT Ratio"
-                        value={maintenanceRecord.meterCtRatio}
-                        onChange={(e) =>
-                          setMaintenanceRecord({
-                            ...maintenanceRecord,
-                            meterCtRatio: e.target.value,
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "var(--text)",
-                          transition: "all 0.3s ease",
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Make
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Manufacturer"
-                        value={maintenanceRecord.make}
-                        onChange={(e) =>
-                          setMaintenanceRecord({
-                            ...maintenanceRecord,
-                            make: e.target.value,
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "var(--text)",
-                          transition: "all 0.3s ease",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* ===== Maintenance Part 2 ===== */}
-                  <h5
-                    style={{
-                      marginTop: 28,
-                      marginBottom: 20,
-                      fontSize: "18px",
-                      fontWeight: "700",
-                      color: "var(--text)",
-                      paddingBottom: "12px",
-                      borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    <span style={{ fontSize: "20px" }}>👥</span> Maintenance
-                    Personnel & Timings
-                  </h5>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 16,
-                      marginBottom: 20,
-                    }}
-                  >
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Start Time
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Start time"
-                        value={maintenanceRecord.startTime}
-                        onChange={(e) =>
-                          setMaintenanceRecord({
-                            ...maintenanceRecord,
-                            startTime: e.target.value,
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "var(--text)",
-                          transition: "all 0.3s ease",
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          marginBottom: 8,
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "var(--text)",
-                        }}
-                      >
-                        Completion Time
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Completion time"
-                        value={maintenanceRecord.completionTime}
-                        onChange={(e) =>
-                          setMaintenanceRecord({
-                            ...maintenanceRecord,
-                            completionTime: e.target.value,
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "12px 14px",
-                          backgroundColor: "rgba(0, 212, 255, 0.08)",
-                          border: "2px solid rgba(0, 212, 255, 0.3)",
-                          borderRadius: "8px",
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "var(--text)",
-                          transition: "all 0.3s ease",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Supervised By
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Supervisor name"
-                      value={maintenanceRecord.supervisedBy}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          supervisedBy: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Technician I
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Technician I name"
-                      value={maintenanceRecord.techI}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          techI: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Technician II
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Technician II name"
-                      value={maintenanceRecord.techII}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          techII: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Technician III
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Technician III name"
-                      value={maintenanceRecord.techIII}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          techIII: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Helpers
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Helper names"
-                      value={maintenanceRecord.helpers}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          helpers: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  {/* ===== Inspection Sign-offs ===== */}
-                  <h5
-                    style={{
-                      marginTop: 28,
-                      marginBottom: 20,
-                      fontSize: "18px",
-                      fontWeight: "700",
-                      color: "var(--text)",
-                      paddingBottom: "12px",
-                      borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    <span style={{ fontSize: "20px" }}>✍️</span> Inspection
-                    Sign-offs
-                  </h5>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Inspected By
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Inspector name"
-                      value={maintenanceRecord.inspectedBy}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          inspectedBy: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Inspected By Date
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Date"
-                      value={maintenanceRecord.inspectedByDate}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          inspectedByDate: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Reflected By
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Reflected by name"
-                      value={maintenanceRecord.reflectedBy}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          reflectedBy: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Reflected By Date
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Date"
-                      value={maintenanceRecord.reflectedByDate}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          reflectedByDate: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Re-Inspected By
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Re-inspector name"
-                      value={maintenanceRecord.reInspectedBy}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          reInspectedBy: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      Re-Inspected By Date
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Date"
-                      value={maintenanceRecord.reInspectedByDate}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          reInspectedByDate: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 20 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      CSS
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="CSS name/value"
-                      value={maintenanceRecord.css}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          css: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        backgroundColor: "rgba(0, 212, 255, 0.08)",
-                        border: "2px solid rgba(0, 212, 255, 0.3)",
-                        borderRadius: "8px",
-                        fontSize: "15px",
-                        fontWeight: 500,
-                        color: "var(--text)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 24 }}>
-                    <label
-                      style={{
-                        marginBottom: 8,
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "var(--text)",
-                      }}
-                    >
-                      CSS Date
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Date"
-                      value={maintenanceRecord.cssDate}
-                      onChange={(e) =>
-                        setMaintenanceRecord({
-                          ...maintenanceRecord,
-                          cssDate: e.target.value,
+                          current: e.target.value,
                         })
                       }
                       style={{
@@ -2750,16 +1571,853 @@ export default function InspectionDetailPage() {
                   </div>
                 </div>
 
-                {/* Button area - Fixed at bottom */}
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Recommended Action</label>
+                  <textarea
+                    placeholder="Recommended action"
+                    value={engineerInputs.recommendedAction}
+                    onChange={(e) =>
+                      setEngineerInputs({
+                        ...engineerInputs,
+                        recommendedAction: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Additional Remarks</label>
+                  <textarea
+                    placeholder="Additional remarks"
+                    value={engineerInputs.additionalRemarks}
+                    onChange={(e) =>
+                      setEngineerInputs({
+                        ...engineerInputs,
+                        additionalRemarks: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+
+                {/* ===== IR Readings ===== */}
+                <h5
+                  style={{
+                    marginTop: 28,
+                    marginBottom: 20,
+                    fontSize: "18px",
+                    fontWeight: "700",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  <span style={{ fontSize: "20px" }}>🌡️</span> Infrared Readings
+                </h5>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: 16,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>IR Left</label>
+                    <input
+                      type="text"
+                      placeholder="Left"
+                      value={maintenanceRecord.irLeft}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          irLeft: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>IR Right</label>
+                    <input
+                      type="text"
+                      placeholder="Right"
+                      value={maintenanceRecord.irRight}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          irRight: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>IR Front</label>
+                    <input
+                      type="text"
+                      placeholder="Front"
+                      value={maintenanceRecord.irFront}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          irFront: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* ===== Power Readings ===== */}
+                <h5
+                  style={{
+                    marginTop: 28,
+                    marginBottom: 20,
+                    fontSize: "18px",
+                    fontWeight: "700",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  <span style={{ fontSize: "20px" }}>⚡</span> Power Readings
+                </h5>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Last Month KVA</label>
+                  <input
+                    type="text"
+                    placeholder="Last month KVA"
+                    value={maintenanceRecord.lastMonthKva}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        lastMonthKva: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 16,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Last Month Date</label>
+                    <input
+                      type="text"
+                      placeholder="Date"
+                      value={maintenanceRecord.lastMonthDate}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          lastMonthDate: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Last Month Time</label>
+                    <input
+                      type="text"
+                      placeholder="Time"
+                      value={maintenanceRecord.lastMonthTime}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          lastMonthTime: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Current Month KVA</label>
+                  <input
+                    type="text"
+                    placeholder="Current month KVA"
+                    value={maintenanceRecord.currentMonthKva}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        currentMonthKva: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                {/* ===== Equipment Details ===== */}
+                <h5
+                  style={{
+                    marginTop: 28,
+                    marginBottom: 20,
+                    fontSize: "18px",
+                    fontWeight: "700",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  <span style={{ fontSize: "20px" }}>⚙️</span> Equipment Details
+                </h5>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Serial No</label>
+                  <input
+                    type="text"
+                    placeholder="Serial number"
+                    value={maintenanceRecord.serial}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        serial: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 16,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Meter CT Ratio</label>
+                    <input
+                      type="text"
+                      placeholder="CT Ratio"
+                      value={maintenanceRecord.meterCtRatio}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          meterCtRatio: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Make</label>
+                    <input
+                      type="text"
+                      placeholder="Manufacturer"
+                      value={maintenanceRecord.make}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          make: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* ===== Maintenance Part 2 ===== */}
+                <h5
+                  style={{
+                    marginTop: 28,
+                    marginBottom: 20,
+                    fontSize: "18px",
+                    fontWeight: "700",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  <span style={{ fontSize: "20px" }}>👥</span> Maintenance
+                  Personnel & Timings
+                </h5>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 16,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Start Time</label>
+                    <input
+                      type="text"
+                      placeholder="Start time"
+                      value={maintenanceRecord.startTime}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          startTime: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Completion Time</label>
+                    <input
+                      type="text"
+                      placeholder="Completion time"
+                      value={maintenanceRecord.completionTime}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          completionTime: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Supervised By</label>
+                  <input
+                    type="text"
+                    placeholder="Supervisor name"
+                    value={maintenanceRecord.supervisedBy}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        supervisedBy: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Technician I</label>
+                  <input
+                    type="text"
+                    placeholder="Technician I name"
+                    value={maintenanceRecord.techI}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        techI: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Technician II</label>
+                  <input
+                    type="text"
+                    placeholder="Technician II name"
+                    value={maintenanceRecord.techII}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        techII: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Technician III</label>
+                  <input
+                    type="text"
+                    placeholder="Technician III name"
+                    value={maintenanceRecord.techIII}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        techIII: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Helpers</label>
+                  <input
+                    type="text"
+                    placeholder="Helper names"
+                    value={maintenanceRecord.helpers}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        helpers: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                {/* ===== Inspection Sign-offs ===== */}
+                <h5
+                  style={{
+                    marginTop: 28,
+                    marginBottom: 20,
+                    fontSize: "18px",
+                    fontWeight: "700",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  <span style={{ fontSize: "20px" }}>✍️</span> Inspection
+                  Sign-offs
+                </h5>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Inspected By</label>
+                  <input
+                    type="text"
+                    placeholder="Inspector name"
+                    value={maintenanceRecord.inspectedBy}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        inspectedBy: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Inspected By Date</label>
+                  <input
+                    type="text"
+                    placeholder="Date"
+                    value={maintenanceRecord.inspectedByDate}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        inspectedByDate: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Reflected By</label>
+                  <input
+                    type="text"
+                    placeholder="Reflected by name"
+                    value={maintenanceRecord.reflectedBy}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        reflectedBy: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Reflected By Date</label>
+                  <input
+                    type="text"
+                    placeholder="Date"
+                    value={maintenanceRecord.reflectedByDate}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        reflectedByDate: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Re-Inspected By</label>
+                  <input
+                    type="text"
+                    placeholder="Re-inspector name"
+                    value={maintenanceRecord.reInspectedBy}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        reInspectedBy: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Re-Inspected By Date</label>
+                  <input
+                    type="text"
+                    placeholder="Date"
+                    value={maintenanceRecord.reInspectedByDate}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        reInspectedByDate: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>CSS</label>
+                  <input
+                    type="text"
+                    placeholder="CSS name/value"
+                    value={maintenanceRecord.css}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        css: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>CSS Date</label>
+                  <input
+                    type="text"
+                    placeholder="Date"
+                    value={maintenanceRecord.cssDate}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        cssDate: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                </div>
+
                 <div
                   style={{
                     display: "flex",
                     gap: 12,
+                    position: "sticky",
+                    bottom: 0,
                     backgroundColor: "rgba(0, 212, 255, 0.05)",
                     border: "1px solid rgba(0, 212, 255, 0.2)",
+                    paddingTop: 16,
+                    paddingBottom: 8,
                     borderTop: "2px solid rgba(0, 212, 255, 0.3)",
-                    borderRadius: "0 0 8px 8px",
-                    padding: "16px 20px",
+                    marginLeft: -20,
+                    marginRight: -20,
+                    paddingLeft: 20,
+                    paddingRight: 20,
                   }}
                 >
                   <button
@@ -2861,9 +2519,7 @@ export default function InspectionDetailPage() {
                     marginBottom: 12,
                   }}
                 >
-                  <h4 style={{ margin: 0, color: "var(--text)" }}>
-                    Thermal Image
-                  </h4>
+                  <h4 style={{ margin: 0, color: "var(--text)" }}>Thermal Image</h4>
                   {weatherThermal && (
                     <span
                       style={{
@@ -3021,41 +2677,23 @@ export default function InspectionDetailPage() {
                                 }}
                               />
                               <span
-                                style={{
-                                  fontWeight: "600",
-                                  color: "var(--text)",
-                                }}
+                                style={{ fontWeight: "600", color: "var(--text)" }}
                               >
                                 {b.klass || "Anomaly"} #{idx + 1}
                               </span>
                             </div>
                             {b.confidence && (
-                              <div
-                                style={{
-                                  marginBottom: 4,
-                                  color: "var(--muted)",
-                                }}
-                              >
+                              <div style={{ marginBottom: 4, color: "var(--muted)" }}>
                                 <strong>Confidence:</strong>{" "}
                                 {(b.confidence * 100).toFixed(1)}%
                               </div>
                             )}
                             {b.details && (
-                              <div
-                                style={{
-                                  marginBottom: 4,
-                                  color: "var(--muted)",
-                                }}
-                              >
+                              <div style={{ marginBottom: 4, color: "var(--muted)" }}>
                                 <strong>Details:</strong> {b.details}
                               </div>
                             )}
-                            <div
-                              style={{
-                                color: "var(--muted)",
-                                fontSize: "12px",
-                              }}
-                            >
+                            <div style={{ color: "var(--muted)", fontSize: "12px" }}>
                               <strong>Detection:</strong>{" "}
                               {b.aiDetected !== false
                                 ? "AI Detected"
@@ -3268,9 +2906,7 @@ export default function InspectionDetailPage() {
                       flexShrink: 0,
                     }}
                   ></div>
-                  <span style={{ color: "var(--muted)", fontSize: 14 }}>
-                    {name}
-                  </span>
+                  <span style={{ color: "var(--muted)", fontSize: 14 }}>{name}</span>
                 </div>
               ))}
           </div>
@@ -3288,45 +2924,70 @@ export default function InspectionDetailPage() {
           }}
         >
           <h3 style={{ margin: 0 }}>Detected Anomalies</h3>
-          {feedbackLog.length > 0 && (
-            <button
-              onClick={() => {
-                const feedbackData = {
-                  exportedAt: new Date().toLocaleString("en-US", {
-                    timeZone: "Asia/Colombo",
-                  }),
-                  imageData: {
-                    transformerNo,
-                    inspectionNo,
-                  },
-                  feedback: feedbackLog,
-                };
-                const formattedJson = JSON.stringify(feedbackData, null, 2);
-                const blob = new Blob([formattedJson], {
-                  type: "application/json",
-                });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `feedback_log_${transformerNo}_${inspectionNo}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }}
-              style={{
-                padding: "7px 14px",
-                borderRadius: 8,
-                border: "none",
-                background: "#6366f1",
-                color: "#ffffff",
-                fontWeight: 600,
-                cursor: "pointer",
-                fontSize: 13,
-              }}
-            >
-              📥 Export Feedback Log
-            </button>
+          {(feedbackLog.length > 0 || (thermalMeta.boxes && thermalMeta.boxes.length>0)) && (
+            <div style={{display: 'flex', gap: 8}}>
+              <button
+                onClick={() => {
+                  try {
+                    const payload = buildExportPayload(
+                      transformerNo || "",
+                      inspectionNo || "",
+                      thermalMeta.boxes || [],
+                      feedbackLog,
+                      removedAnomalies || [],
+                      username || ""
+                    );
+                    downloadJson(payload, `feedback_log_${transformerNo}_${inspectionNo}.json`);
+                  } catch (err) {
+                    console.error("Export JSON failed:", err);
+                    alert("Failed to export feedback (JSON). See console for details.");
+                  }
+                }}
+                style={{
+                  padding: "7px 14px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#6366f1",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                📥 Export Feedback Log (JSON)
+              </button>
+
+              <button
+                onClick={() => {
+                  try {
+                    const payload = buildExportPayload(
+                      transformerNo || "",
+                      inspectionNo || "",
+                      thermalMeta.boxes || [],
+                      feedbackLog,
+                      removedAnomalies || [],
+                      username || ""
+                    );
+                    downloadCsv(payload, `feedback_log_${transformerNo}_${inspectionNo}.csv`);
+                  } catch (err) {
+                    console.error("Export CSV failed:", err);
+                    alert("Failed to export feedback (CSV). See console for details.");
+                  }
+                }}
+                style={{
+                  padding: "7px 14px",
+                  borderRadius: 8,
+                  border: "1px solid #6366f1",
+                  background: "#ffffff",
+                  color: "#6366f1",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                📥 Export Feedback Log (CSV)
+              </button>
+            </div>
           )}
         </div>
 
@@ -3377,6 +3038,11 @@ export default function InspectionDetailPage() {
 
                 if (logData) {
                   setFeedbackLog((prev) => [...prev, logData]);
+                  try {
+                    await loadFeedbackLogs();
+                  } catch (e) {
+                    console.warn("Failed to refresh logs after delete", e);
+                  }
                 }
 
                 setEditingBoxId(null);
@@ -3388,22 +3054,59 @@ export default function InspectionDetailPage() {
               }
             }}
             onReject={(anomalyIdx) => {
-              const userName = localStorage.getItem("userName") || "User";
-              const rejectedBox = thermalMeta.boxes?.find(
-                (b) => b.idx === anomalyIdx
-              );
-              if (rejectedBox) {
+              (async () => {
+                const userName = localStorage.getItem("userName") || "User";
+                const rejectedBox = thermalMeta.boxes?.find(
+                  (b) => b.idx === anomalyIdx
+                );
+                if (!rejectedBox) return;
+
+                // Optimistically move to removedAnomalies in UI
                 const updatedBox = {
                   ...rejectedBox,
                   rejectedBy: userName,
                   rejectedAt: new Date().toLocaleString(),
-                };
-                setRemovedAnomalies((prev) => [...prev, updatedBox]);
+                } as Box;
                 setThermalMeta((prev) => ({
                   ...prev,
                   boxes: prev.boxes?.filter((b) => b.idx !== anomalyIdx),
                 }));
-              }
+
+                try {
+                  // Persist removal via deleteAnomaly so backend logs/remaining anomalies are updated
+                  const logData = await deleteAnomaly(
+                    transformerNo!,
+                    inspectionNo!,
+                    rejectedBox,
+                    thermalMeta.boxes?.filter((b) => b.idx !== anomalyIdx) || []
+                  );
+
+                  // Add to removed list (avoid duplicates)
+                  setRemovedAnomalies((prev) => {
+                    const key = updatedBox.n.join(",");
+                    if (prev.some((p) => p.n.join(",") === key)) return prev;
+                    return [...prev, updatedBox];
+                  });
+
+                  if (logData) {
+                    setFeedbackLog((prev) => [...prev, logData]);
+                    // refresh logs from server to ensure persisted state is reflected
+                    try {
+                      await loadFeedbackLogs();
+                    } catch (e) {
+                      console.warn("Failed to refresh logs after deletion", e);
+                    }
+                  }
+                } catch (err) {
+                  console.error("Error saving removal:", err);
+                  // rollback UI if save fails
+                  setThermalMeta((prev) => ({
+                    ...prev,
+                    boxes: [...(prev.boxes || []), rejectedBox],
+                  }));
+                  alert("Error saving removal");
+                }
+              })();
             }}
             onDelete={async (anomalyIdx) => {
               const boxToDelete = thermalMeta.boxes?.find(
@@ -3427,6 +3130,18 @@ export default function InspectionDetailPage() {
                 if (logData) {
                   setFeedbackLog((prev) => [...prev, logData]);
                 }
+                // add to removedAnomalies so it persists in UI
+                const userName = localStorage.getItem("userName") || "User";
+                const updatedBox = {
+                  ...boxToDelete,
+                  rejectedBy: userName,
+                  rejectedAt: new Date().toLocaleString(),
+                } as Box;
+                setRemovedAnomalies((prev) => {
+                  const key = updatedBox.n.join(",");
+                  if (prev.some((p) => p.n.join(",") === key)) return prev;
+                  return [...prev, updatedBox];
+                });
               } catch (err) {
                 console.error(err);
                 alert("Error deleting anomaly");

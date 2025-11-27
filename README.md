@@ -37,59 +37,139 @@ Transformer-Management-System-Develop_2/
 2. Install dependencies:
    ```sh
    npm install
+   # Transformer Management System
+
+   This repository is a full-stack application for managing transformers and their thermal inspections. It contains a React + TypeScript frontend and a Spring Boot backend that persists images, detection results and annotation/feedback logs.
+
+   **Contents**
+   - **Frontend:** `frontend/` — React, TypeScript, Vite
+   - **Backend:** `backend/` — Spring Boot, JPA repository layer
+
+   **Quick start**
+   - Start backend first, then frontend (detailed steps below).
+
+   **Important:** Use a Windows `cmd.exe` shell for the frontend dev commands on Windows to avoid PowerShell execution-policy issues when running `npm` (or run PowerShell as Administrator and change execution policy if needed).
+
+   ---
+
+   **Project Summary**
+   - **Purpose:** Capture AI detections on thermal images, allow annotators to modify/add/delete anomalies, persist feedback, and export feedback logs for model improvement.
+   - **Storage:** The backend persists images, detection JSON and `logs` (a JSON string) per image record.
+
+   ---
+
+   **Setup & Run**
+
+   **Backend (recommended Java 17+, Maven)**
+   - Install Java 17+ and Maven (or use included `mvnw`).
+   - From repository root:
+   ```cmd
+   cd "c:\Users\Rebecca Fernando\Downloads\Transformer-Management-System-phase4_dev (2)\Transformer-Management-System-phase4_dev\backend"
+   ./mvnw clean install
+   ./mvnw spring-boot:run
    ```
-3. Start the development server:
-   ```sh
+   - The backend exposes API under the configured base URL (see `backend/src/main/resources/application.yml`).
+
+   **Frontend (Node 18+, npm)**
+   - From repository root, open `cmd.exe` and run:
+   ```cmd
+   cd "c:\Users\Rebecca Fernando\Downloads\Transformer-Management-System-phase4_dev (2)\Transformer-Management-System-phase4_dev\frontend"
+   npm install
    npm run dev
    ```
-4. Build for production:
-   ```sh
+   - Production build:
+   ```cmd
    npm run build
    ```
 
-### Backend
+   ---
 
-1. Navigate to the `backend` directory:
-   ```sh
-   cd backend
+   **Implemented Features**
+   - **Image upload:** Upload thermal and baseline images to the backend.
+   - **AI Detection:** Backend runs YOLO-based detection and stores `detectionJson` on the image record.
+   - **Annotation UI:** View AI detections, edit bounding boxes, add manual anomalies and reject/delete detections.
+   - **Feedback Logs:** Every user change (add/modify/delete) writes a `FeedbackLog` entry which is persisted in the image `logs` column.
+   - **Export:** Frontend can export feedback as JSON and CSV for model training/analysis.
+   - **Maintenance Form:** Fill and save inspector/maintenance form data tied to inspections.
+
+   ---
+
+   **Detection Approach (Overview)**
+   - The project uses a Python YOLO runner (bundled under `backend/model/` and `backend/python/`) invoked by the backend service to produce anomaly bounding boxes.
+   - The backend saves the raw detection results in `detectionJson` (stored in the DB) and returns the list to the frontend for rendering.
+   - When a user modifies or deletes an AI detection, the original detection is saved inside `logs` as `originalAIDetection` with a `userModification` entry to preserve provenance.
+
+   ---
+
+   **Annotation System (how it works)**
+   - **UI actions:** Annotators can approve, edit, add, or reject detections.
+   - **Persistence path:** Frontend calls `detectionApi.updateAnomalies` which sends `detectionJson` (current anomaly list) and `logs` (a JSON entry or array) via `PUT /transformer-thermal-inspection/image-data/update`.
+   - **Log shape:** A `FeedbackLog` entry is either a `userAddition` or an `originalAIDetection` + `userModification` object. These are appended to the persisted `logs` field for the image.
+   - **Removed Anomalies:** Deleted/ rejected AI detections are stored as deletion logs; the frontend reconstructs the `Removed Anomalies` list from those persisted logs on every load.
+
+   ---
+
+   **Backend structure used to persist annotations**
+   - `ImageDataEntity` (JPA entity) contains `detectionJson` and `logs` columns.
+   - `CustomMapper.updateEntity(...)` copies incoming `ImageRequest.detectionJson` and `ImageRequest.logs` into the entity before saving.
+   - Controller endpoint: `PUT /transformer-thermal-inspection/image-data/update` → `ImageDataService.updateImage(...)` → persist entity.
+   - When the frontend requests `GET /transformer-thermal-inspection/image-data/view`, the backend returns the `ImageResponse` containing `responseData.logs` (string or JSON) and `anomaliesResponse` built from `detectionJson`.
+
+   ---
+
+   **Form generation & saving mechanism (inspection form)**
+   - The inspection/maintenance form is a React form in `InspectionDetailPage.tsx`.
+   - When saved, the page calls `inspectionDataApi.updateInspection(...)` which sends form fields to the backend `InspectionDataController` to update the `InspectionDataEntity`.
+   - The backend mapper formats date/time and updates only provided fields.
+
+   ---
+
+   **Database schema (record storage overview)**
+   - `image_data` table (represented by `ImageDataEntity`):
+     - `id` (PK)
+     - `transformer_no` (string)
+     - `inspection_no` (string)
+     - `type` (Thermal/Baseline)
+     - `image` (blob)
+     - `detection_json` (text) — JSON array of anomalies
+     - `logs` (text) — JSON string or array of `FeedbackLog` entries
+     - `date_time` (timestamp)
+
+   - `inspection_data` table (represented by `InspectionDataEntity`): fields for inspector name, status, voltages, maintenance details, etc. (see `backend/src/main/java/.../entity/InspectionDataEntity.java`).
+
+   Note: exact column names and types are defined by JPA entities in `backend/src/main/java/.../entity`.
+
+   ---
+
+   **Dependencies**
+   - Frontend: Node, npm, React, Vite, TypeScript, Axios.
+   - Backend: Java 17+, Spring Boot, Spring Data JPA, Jackson.
+
+   ---
+
+   **Known Bugs & Limitations**
+   - Frontend-only state (previously) allowed `Removed Anomalies` to disappear after navigation; recent changes now persist deletions to `logs` and reconstruct them on load. If you still see this, verify `responseData.logs` from the backend contains deletion entries.
+   - PowerShell execution policy may block `npm` script execution on Windows; use `cmd.exe` or adjust policy.
+   - No role-based auth is enforced — anyone who can reach the UI/API can modify annotations.
+   - Some TypeScript `// @ts-nocheck` pragmas are present in a few files (temporary pragmatic fixes). Cleaning these is a follow-up task.
+   - CSV export omits some nested provenance details by design; extend `exportFeedback.ts` if you need more columns.
+
+   ---
+
+   **How to verify persisted removed anomalies (debug steps)**
+   1. Reject/delete an anomaly in the UI.
+   2. Use the view API to inspect `logs`:
+   ```cmd
+   curl "http://localhost:8080/transformer-thermal-inspection/image-data/view?transformerNo=<NO>&inspectionNo=<ID>&type=Thermal"
    ```
-2. Ensure Java 17+ and Maven are installed.
-3. Build the project:
-   ```sh
-   ./mvnw clean install
-   ```
-4. Run the application:
-   ```sh
-   ./mvnw spring-boot:run
-   ```
-   Or use your IDE to run the main class.
+   3. Confirm `responseData.logs` contains entries with `userModification.action == "deleted"`.
 
----
+   ---
 
-## Implemented Features
+   If you'd like, I can:
+   - Add CSV rows for `removedAnomalies` in `frontend/src/utils/exportFeedback.ts`.
+   - Add temporary debug prints for the `update` call payload to help trace any missing saves.
+   - Prepare a short developer checklist for deployment.
 
-- Transformer data management (CRUD operations)
-- Inspection data entry and display
-- Image upload and preview
-- Responsive frontend UI
-- REST API integration between frontend and backend
-- Database support (MySQL/MongoDB)
-
----
-
-## Known Limitations / Issues
-
-- No authentication or authorization implemented
-- Basic error handling for API/network requests
-- Database connection settings must be configured in `backend/src/main/resources/application.properties`
-- Image upload size limits not enforced
-- UI styling and accessibility improvements needed
-- No automated tests included yet
-
----
-
-## Additional Notes
-
-- Frontend uses ESLint for code linting (`frontend/eslint.config.js`)
-- Backend documentation available in `backend/HELP.md`
-- Ensure backend API endpoints match frontend
+   Contact / Next steps
+   - If you want the README trimmed or expanded with diagrams or a quick start script, tell me which format you prefer and I will add it.
