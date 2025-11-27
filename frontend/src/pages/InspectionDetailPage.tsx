@@ -1144,7 +1144,7 @@ export default function InspectionDetailPage() {
                 flex: 1,
                 overflow: "hidden",
                 padding: "24px",
-                backgroundColor: "#f9fafb",
+                backgroundColor: "var(--bg)",
                 minHeight: 0,
               }}
             >
@@ -1153,7 +1153,8 @@ export default function InspectionDetailPage() {
                 style={{
                   overflowY: "auto",
                   overflowX: "hidden",
-                  backgroundColor: "white",
+                  backgroundColor: "rgba(0, 212, 255, 0.05)",
+                  border: "1px solid rgba(0, 212, 255, 0.2)",
                   borderRadius: "8px",
                   padding: "20px",
                   boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
@@ -1164,18 +1165,19 @@ export default function InspectionDetailPage() {
                 <h5
                   style={{
                     marginTop: 0,
-                    marginBottom: 16,
-                    fontSize: "16px",
+                    marginBottom: 20,
+                    fontSize: "18px",
                     fontWeight: "700",
-                    color: "#1e293b",
-                    paddingBottom: "10px",
-                    borderBottom: "2px solid #e2e8f0",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  <span style={{ fontSize: "18px" }}>📄</span> Inspection
+                  <span style={{ fontSize: "20px" }}>📄</span> Inspection
                   Details
                 </h5>
 
@@ -1184,43 +1186,67 @@ export default function InspectionDetailPage() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr 1fr",
-                    gap: 12,
-                    marginBottom: 12,
+                    gap: 16,
+                    marginBottom: 20,
                   }}
                 >
                   <div>
-                    <label>Transformer No</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Transformer No</label>
                     <input
                       type="text"
                       value={transformerNo || ""}
                       disabled
                       style={{
-                        backgroundColor: "#f3f4f6",
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
                         cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
                       }}
                     />
                   </div>
                   <div>
-                    <label>Pole No</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Pole No</label>
                     <input
                       type="text"
                       value={transformer?.poleNo || ""}
                       disabled
                       style={{
-                        backgroundColor: "#f3f4f6",
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
                         cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
                       }}
                     />
                   </div>
                   <div>
-                    <label>Branch</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Branch</label>
                     <input
                       type="text"
                       value={currentInspection?.branch || ""}
                       disabled
                       style={{
-                        backgroundColor: "#f3f4f6",
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
                         cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
                       }}
                     />
                   </div>
@@ -1230,12 +1256,12 @@ export default function InspectionDetailPage() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
-                    gap: 12,
-                    marginBottom: 12,
+                    gap: 16,
+                    marginBottom: 20,
                   }}
                 >
                   <div>
-                    <label>Date of Inspection</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Date of Inspection</label>
                     <input
                       type="text"
                       value={(() => {
@@ -1255,13 +1281,21 @@ export default function InspectionDetailPage() {
                       })()}
                       disabled
                       style={{
-                        backgroundColor: "#f3f4f6",
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
                         cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
                       }}
                     />
                   </div>
                   <div>
-                    <label>Time</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Time</label>
                     <input
                       type="text"
                       value={(() => {
@@ -1277,8 +1311,16 @@ export default function InspectionDetailPage() {
                       })()}
                       disabled
                       style={{
-                        backgroundColor: "#f3f4f6",
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
                         cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
                       }}
                     />
                   </div>
@@ -1288,31 +1330,47 @@ export default function InspectionDetailPage() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
-                    gap: 12,
-                    marginBottom: 12,
+                    gap: 16,
+                    marginBottom: 20,
                   }}
                 >
                   <div>
-                    <label>Location Details</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Location Details</label>
                     <input
                       type="text"
                       value={transformer?.locationDetails || ""}
                       disabled
                       style={{
-                        backgroundColor: "#f3f4f6",
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
                         cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
                       }}
                     />
                   </div>
                   <div>
-                    <label>Type</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Type</label>
                     <input
                       type="text"
                       value={transformer?.type || ""}
                       disabled
                       style={{
-                        backgroundColor: "#f3f4f6",
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
                         cursor: "not-allowed",
+                        color: "var(--muted)",
+                        borderColor: "rgba(0, 212, 255, 0.3)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontStyle: "italic",
                       }}
                     />
                   </div>
@@ -1320,24 +1378,25 @@ export default function InspectionDetailPage() {
 
                 <h5
                   style={{
-                    marginTop: 24,
-                    marginBottom: 16,
-                    fontSize: "16px",
+                    marginTop: 28,
+                    marginBottom: 20,
+                    fontSize: "18px",
                     fontWeight: "700",
-                    color: "#1e293b",
-                    paddingBottom: "10px",
-                    borderBottom: "2px solid #e2e8f0",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  <span style={{ fontSize: "18px" }}>👷</span> Engineer
+                  <span style={{ fontSize: "20px" }}>👷</span> Engineer
                   Information
                 </h5>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Inspected by</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Inspected by</label>
                   <input
                     type="text"
                     placeholder="Inspected by"
@@ -1348,11 +1407,22 @@ export default function InspectionDetailPage() {
                         inspectorName: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Transformer Status</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Transformer Status</label>
                   <select
                     value={engineerInputs.engineerStatus}
                     onChange={(e) =>
@@ -1361,6 +1431,18 @@ export default function InspectionDetailPage() {
                         engineerStatus: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                      cursor: "pointer",
+                    }}
                   >
                     <option value="OK">OK</option>
                     <option value="Needs Maintenance">Needs Maintenance</option>
@@ -1372,12 +1454,12 @@ export default function InspectionDetailPage() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
-                    gap: 12,
-                    marginBottom: 12,
+                    gap: 16,
+                    marginBottom: 20,
                   }}
                 >
                   <div>
-                    <label>Voltage (V)</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Voltage (V)</label>
                     <input
                       type="number"
                       step="any"
@@ -1389,10 +1471,21 @@ export default function InspectionDetailPage() {
                           voltage: e.target.value,
                         })
                       }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
                     />
                   </div>
                   <div>
-                    <label>Current (A)</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Current (A)</label>
                     <input
                       type="number"
                       step="any"
@@ -1404,12 +1497,23 @@ export default function InspectionDetailPage() {
                           current: e.target.value,
                         })
                       }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
                     />
                   </div>
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Recommended Action</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Recommended Action</label>
                   <textarea
                     placeholder="Recommended action"
                     value={engineerInputs.recommendedAction}
@@ -1419,12 +1523,24 @@ export default function InspectionDetailPage() {
                         recommendedAction: e.target.value,
                       })
                     }
-                    rows={2}
+                    rows={3}
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                      fontFamily: "inherit",
+                    }}
                   />
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Additional Remarks</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Additional Remarks</label>
                   <textarea
                     placeholder="Additional remarks"
                     value={engineerInputs.additionalRemarks}
@@ -1434,38 +1550,51 @@ export default function InspectionDetailPage() {
                         additionalRemarks: e.target.value,
                       })
                     }
-                    rows={2}
+                    rows={3}
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                      fontFamily: "inherit",
+                    }}
                   />
                 </div>
 
                 {/* ===== IR Readings ===== */}
                 <h5
                   style={{
-                    marginTop: 24,
-                    marginBottom: 16,
-                    fontSize: "16px",
+                    marginTop: 28,
+                    marginBottom: 20,
+                    fontSize: "18px",
                     fontWeight: "700",
-                    color: "#1e293b",
-                    paddingBottom: "10px",
-                    borderBottom: "2px solid #e2e8f0",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  <span style={{ fontSize: "18px" }}>🌡️</span> Infrared Readings
+                  <span style={{ fontSize: "20px" }}>🌡️</span> Infrared Readings
                 </h5>
 
                 <div
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr 1fr",
-                    gap: 12,
-                    marginBottom: 12,
+                    gap: 16,
+                    marginBottom: 20,
                   }}
                 >
                   <div>
-                    <label>IR Left</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>IR Left</label>
                     <input
                       type="text"
                       placeholder="Left"
@@ -1476,10 +1605,21 @@ export default function InspectionDetailPage() {
                           irLeft: e.target.value,
                         })
                       }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
                     />
                   </div>
                   <div>
-                    <label>IR Right</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>IR Right</label>
                     <input
                       type="text"
                       placeholder="Right"
@@ -1490,10 +1630,21 @@ export default function InspectionDetailPage() {
                           irRight: e.target.value,
                         })
                       }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
                     />
                   </div>
                   <div>
-                    <label>IR Front</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>IR Front</label>
                     <input
                       type="text"
                       placeholder="Front"
@@ -1504,6 +1655,17 @@ export default function InspectionDetailPage() {
                           irFront: e.target.value,
                         })
                       }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
                     />
                   </div>
                 </div>
@@ -1511,23 +1673,24 @@ export default function InspectionDetailPage() {
                 {/* ===== Power Readings ===== */}
                 <h5
                   style={{
-                    marginTop: 24,
-                    marginBottom: 16,
-                    fontSize: "16px",
+                    marginTop: 28,
+                    marginBottom: 20,
+                    fontSize: "18px",
                     fontWeight: "700",
-                    color: "#1e293b",
-                    paddingBottom: "10px",
-                    borderBottom: "2px solid #e2e8f0",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  <span style={{ fontSize: "18px" }}>⚡</span> Power Readings
+                  <span style={{ fontSize: "20px" }}>⚡</span> Power Readings
                 </h5>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Last Month KVA</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Last Month KVA</label>
                   <input
                     type="text"
                     placeholder="Last month KVA"
@@ -1538,6 +1701,17 @@ export default function InspectionDetailPage() {
                         lastMonthKva: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
@@ -1545,12 +1719,12 @@ export default function InspectionDetailPage() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
-                    gap: 12,
-                    marginBottom: 12,
+                    gap: 16,
+                    marginBottom: 20,
                   }}
                 >
                   <div>
-                    <label>Last Month Date</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Last Month Date</label>
                     <input
                       type="text"
                       placeholder="Date"
@@ -1561,10 +1735,21 @@ export default function InspectionDetailPage() {
                           lastMonthDate: e.target.value,
                         })
                       }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
                     />
                   </div>
                   <div>
-                    <label>Last Month Time</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Last Month Time</label>
                     <input
                       type="text"
                       placeholder="Time"
@@ -1575,12 +1760,23 @@ export default function InspectionDetailPage() {
                           lastMonthTime: e.target.value,
                         })
                       }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
                     />
                   </div>
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Current Month KVA</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Current Month KVA</label>
                   <input
                     type="text"
                     placeholder="Current month KVA"
@@ -1591,29 +1787,41 @@ export default function InspectionDetailPage() {
                         currentMonthKva: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
                 {/* ===== Equipment Details ===== */}
                 <h5
                   style={{
-                    marginTop: 24,
-                    marginBottom: 16,
-                    fontSize: "16px",
+                    marginTop: 28,
+                    marginBottom: 20,
+                    fontSize: "18px",
                     fontWeight: "700",
-                    color: "#1e293b",
-                    paddingBottom: "10px",
-                    borderBottom: "2px solid #e2e8f0",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  <span style={{ fontSize: "18px" }}>⚙️</span> Equipment Details
+                  <span style={{ fontSize: "20px" }}>⚙️</span> Equipment Details
                 </h5>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Serial No</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Serial No</label>
                   <input
                     type="text"
                     placeholder="Serial number"
@@ -1624,6 +1832,17 @@ export default function InspectionDetailPage() {
                         serial: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
@@ -1631,12 +1850,12 @@ export default function InspectionDetailPage() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
-                    gap: 12,
-                    marginBottom: 12,
+                    gap: 16,
+                    marginBottom: 20,
                   }}
                 >
                   <div>
-                    <label>Meter CT Ratio</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Meter CT Ratio</label>
                     <input
                       type="text"
                       placeholder="CT Ratio"
@@ -1647,10 +1866,21 @@ export default function InspectionDetailPage() {
                           meterCtRatio: e.target.value,
                         })
                       }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
                     />
                   </div>
                   <div>
-                    <label>Make</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Make</label>
                     <input
                       type="text"
                       placeholder="Manufacturer"
@@ -1661,6 +1891,17 @@ export default function InspectionDetailPage() {
                           make: e.target.value,
                         })
                       }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
                     />
                   </div>
                 </div>
@@ -1668,19 +1909,20 @@ export default function InspectionDetailPage() {
                 {/* ===== Maintenance Part 2 ===== */}
                 <h5
                   style={{
-                    marginTop: 24,
-                    marginBottom: 16,
-                    fontSize: "16px",
+                    marginTop: 28,
+                    marginBottom: 20,
+                    fontSize: "18px",
                     fontWeight: "700",
-                    color: "#1e293b",
-                    paddingBottom: "10px",
-                    borderBottom: "2px solid #e2e8f0",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  <span style={{ fontSize: "18px" }}>👥</span> Maintenance
+                  <span style={{ fontSize: "20px" }}>👥</span> Maintenance
                   Personnel & Timings
                 </h5>
 
@@ -1688,12 +1930,12 @@ export default function InspectionDetailPage() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
-                    gap: 12,
-                    marginBottom: 12,
+                    gap: 16,
+                    marginBottom: 20,
                   }}
                 >
                   <div>
-                    <label>Start Time</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Start Time</label>
                     <input
                       type="text"
                       placeholder="Start time"
@@ -1704,10 +1946,21 @@ export default function InspectionDetailPage() {
                           startTime: e.target.value,
                         })
                       }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
                     />
                   </div>
                   <div>
-                    <label>Completion Time</label>
+                    <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Completion Time</label>
                     <input
                       type="text"
                       placeholder="Completion time"
@@ -1718,12 +1971,23 @@ export default function InspectionDetailPage() {
                           completionTime: e.target.value,
                         })
                       }
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        backgroundColor: "rgba(0, 212, 255, 0.08)",
+                        border: "2px solid rgba(0, 212, 255, 0.3)",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        color: "var(--text)",
+                        transition: "all 0.3s ease",
+                      }}
                     />
                   </div>
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Supervised By</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Supervised By</label>
                   <input
                     type="text"
                     placeholder="Supervisor name"
@@ -1734,11 +1998,22 @@ export default function InspectionDetailPage() {
                         supervisedBy: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Technician I</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Technician I</label>
                   <input
                     type="text"
                     placeholder="Technician I name"
@@ -1749,11 +2024,22 @@ export default function InspectionDetailPage() {
                         techI: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Technician II</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Technician II</label>
                   <input
                     type="text"
                     placeholder="Technician II name"
@@ -1764,11 +2050,22 @@ export default function InspectionDetailPage() {
                         techII: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Technician III</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Technician III</label>
                   <input
                     type="text"
                     placeholder="Technician III name"
@@ -1779,11 +2076,22 @@ export default function InspectionDetailPage() {
                         techIII: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Helpers</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Helpers</label>
                   <input
                     type="text"
                     placeholder="Helper names"
@@ -1794,30 +2102,42 @@ export default function InspectionDetailPage() {
                         helpers: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
                 {/* ===== Inspection Sign-offs ===== */}
                 <h5
                   style={{
-                    marginTop: 24,
-                    marginBottom: 16,
-                    fontSize: "16px",
+                    marginTop: 28,
+                    marginBottom: 20,
+                    fontSize: "18px",
                     fontWeight: "700",
-                    color: "#1e293b",
-                    paddingBottom: "10px",
-                    borderBottom: "2px solid #e2e8f0",
+                    color: "var(--text)",
+                    paddingBottom: "12px",
+                    borderBottom: "3px solid rgba(0, 212, 255, 0.5)",
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
+                    gap: "10px",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  <span style={{ fontSize: "18px" }}>✍️</span> Inspection
+                  <span style={{ fontSize: "20px" }}>✍️</span> Inspection
                   Sign-offs
                 </h5>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Inspected By</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Inspected By</label>
                   <input
                     type="text"
                     placeholder="Inspector name"
@@ -1828,11 +2148,22 @@ export default function InspectionDetailPage() {
                         inspectedBy: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Inspected By Date</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Inspected By Date</label>
                   <input
                     type="text"
                     placeholder="Date"
@@ -1843,11 +2174,22 @@ export default function InspectionDetailPage() {
                         inspectedByDate: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Reflected By</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Reflected By</label>
                   <input
                     type="text"
                     placeholder="Reflected by name"
@@ -1858,11 +2200,22 @@ export default function InspectionDetailPage() {
                         reflectedBy: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Reflected By Date</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Reflected By Date</label>
                   <input
                     type="text"
                     placeholder="Date"
@@ -1873,11 +2226,22 @@ export default function InspectionDetailPage() {
                         reflectedByDate: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Re-Inspected By</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Re-Inspected By</label>
                   <input
                     type="text"
                     placeholder="Re-inspector name"
@@ -1888,11 +2252,22 @@ export default function InspectionDetailPage() {
                         reInspectedBy: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Re-Inspected By Date</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Re-Inspected By Date</label>
                   <input
                     type="text"
                     placeholder="Date"
@@ -1903,11 +2278,22 @@ export default function InspectionDetailPage() {
                         reInspectedByDate: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>CSS</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>CSS</label>
                   <input
                     type="text"
                     placeholder="CSS name/value"
@@ -1918,11 +2304,22 @@ export default function InspectionDetailPage() {
                         css: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
                 <div style={{ marginBottom: 24 }}>
-                  <label>CSS Date</label>
+                  <label style={{ marginBottom: 8, display: "block", fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>CSS Date</label>
                   <input
                     type="text"
                     placeholder="Date"
@@ -1933,6 +2330,17 @@ export default function InspectionDetailPage() {
                         cssDate: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(0, 212, 255, 0.08)",
+                      border: "2px solid rgba(0, 212, 255, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                      transition: "all 0.3s ease",
+                    }}
                   />
                 </div>
 
@@ -1942,10 +2350,11 @@ export default function InspectionDetailPage() {
                     gap: 12,
                     position: "sticky",
                     bottom: 0,
-                    backgroundColor: "white",
+                    backgroundColor: "rgba(0, 212, 255, 0.05)",
+                    border: "1px solid rgba(0, 212, 255, 0.2)",
                     paddingTop: 16,
                     paddingBottom: 8,
-                    borderTop: "2px solid #e5e7eb",
+                    borderTop: "2px solid rgba(0, 212, 255, 0.3)",
                     marginLeft: -20,
                     marginRight: -20,
                     paddingLeft: 20,
@@ -2007,9 +2416,9 @@ export default function InspectionDetailPage() {
                     onClick={() => setEditingEngineer(false)}
                     style={{
                       padding: "12px 24px",
-                      backgroundColor: "#f3f4f6",
-                      color: "#374151",
-                      border: "none",
+                      backgroundColor: "rgba(0, 212, 255, 0.2)",
+                      color: "var(--text)",
+                      border: "1px solid rgba(0, 212, 255, 0.4)",
                       borderRadius: "8px",
                       fontSize: "15px",
                       fontWeight: "600",
@@ -2017,10 +2426,12 @@ export default function InspectionDetailPage() {
                       transition: "all 0.2s",
                     }}
                     onMouseOver={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#e5e7eb")
+                      (e.currentTarget.style.backgroundColor =
+                        "rgba(0, 212, 255, 0.3)")
                     }
                     onMouseOut={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#f3f4f6")
+                      (e.currentTarget.style.backgroundColor =
+                        "rgba(0, 212, 255, 0.2)")
                     }
                   >
                     ✕ Cancel
@@ -2033,7 +2444,8 @@ export default function InspectionDetailPage() {
                 style={{
                   overflowY: "auto",
                   overflowX: "hidden",
-                  backgroundColor: "white",
+                  backgroundColor: "rgba(0, 212, 255, 0.05)",
+                  border: "1px solid rgba(0, 212, 255, 0.2)",
                   borderRadius: "8px",
                   padding: "20px",
                   boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
@@ -2048,7 +2460,7 @@ export default function InspectionDetailPage() {
                     marginBottom: 12,
                   }}
                 >
-                  <h4 style={{ margin: 0 }}>Thermal Image</h4>
+                  <h4 style={{ margin: 0, color: "var(--text)" }}>Thermal Image</h4>
                   {weatherThermal && (
                     <span
                       style={{
@@ -2148,12 +2560,13 @@ export default function InspectionDetailPage() {
                 ) : (
                   <div
                     style={{
-                      backgroundColor: "#f3f4f6",
+                      backgroundColor: "rgba(0, 212, 255, 0.1)",
                       padding: "40px 20px",
                       textAlign: "center",
                       borderRadius: "8px",
-                      color: "#666",
+                      color: "var(--muted)",
                       fontSize: "12px",
+                      border: "1px dashed rgba(0, 212, 255, 0.3)",
                     }}
                   >
                     No thermal image available
@@ -2170,6 +2583,7 @@ export default function InspectionDetailPage() {
                           marginBottom: 12,
                           fontSize: "14px",
                           fontWeight: "600",
+                          color: "var(--text)",
                         }}
                       >
                         Detected Anomalies
@@ -2179,7 +2593,7 @@ export default function InspectionDetailPage() {
                           <div
                             key={idx}
                             style={{
-                              backgroundColor: "#f9fafb",
+                              backgroundColor: "rgba(0, 212, 255, 0.08)",
                               border: `1px solid ${b.color || "#ff0000"}`,
                               borderLeft: `4px solid ${b.color || "#ff0000"}`,
                               padding: "12px",
@@ -2204,23 +2618,23 @@ export default function InspectionDetailPage() {
                                 }}
                               />
                               <span
-                                style={{ fontWeight: "600", color: "#1f2937" }}
+                                style={{ fontWeight: "600", color: "var(--text)" }}
                               >
                                 {b.klass || "Anomaly"} #{idx + 1}
                               </span>
                             </div>
                             {b.confidence && (
-                              <div style={{ marginBottom: 4, color: "#666" }}>
+                              <div style={{ marginBottom: 4, color: "var(--muted)" }}>
                                 <strong>Confidence:</strong>{" "}
                                 {(b.confidence * 100).toFixed(1)}%
                               </div>
                             )}
                             {b.details && (
-                              <div style={{ marginBottom: 4, color: "#666" }}>
+                              <div style={{ marginBottom: 4, color: "var(--muted)" }}>
                                 <strong>Details:</strong> {b.details}
                               </div>
                             )}
-                            <div style={{ color: "#666", fontSize: "12px" }}>
+                            <div style={{ color: "var(--muted)", fontSize: "12px" }}>
                               <strong>Detection:</strong>{" "}
                               {b.aiDetected !== false
                                 ? "AI Detected"
@@ -2400,9 +2814,9 @@ export default function InspectionDetailPage() {
           style={{
             marginTop: 16,
             padding: "20px 24px",
-            background: "#ffffff",
+            background: "var(--card)",
             borderRadius: 10,
-            border: "1px solid #e5e7eb",
+            border: "1px solid rgba(0, 212, 255, 0.2)",
             boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
           }}
         >
@@ -2410,7 +2824,7 @@ export default function InspectionDetailPage() {
             style={{
               fontSize: 15,
               fontWeight: 600,
-              color: "#1e293b",
+              color: "var(--text)",
               marginBottom: 14,
             }}
           >
@@ -2433,7 +2847,7 @@ export default function InspectionDetailPage() {
                       flexShrink: 0,
                     }}
                   ></div>
-                  <span style={{ color: "#475569", fontSize: 14 }}>{name}</span>
+                  <span style={{ color: "var(--muted)", fontSize: 14 }}>{name}</span>
                 </div>
               ))}
           </div>
