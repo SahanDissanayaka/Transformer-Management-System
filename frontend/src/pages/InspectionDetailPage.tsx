@@ -2197,9 +2197,9 @@ export default function InspectionDetailPage() {
           style={{
             marginTop: 16,
             padding: "20px 24px",
-            background: "#ffffff",
+            background: "var(--card)",
             borderRadius: 10,
-            border: "1px solid #e5e7eb",
+            border: "1px solid rgba(0, 212, 255, 0.2)",
             boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
           }}
         >
@@ -2207,7 +2207,7 @@ export default function InspectionDetailPage() {
             style={{
               fontSize: 15,
               fontWeight: 600,
-              color: "#1e293b",
+              color: "var(--text)",
               marginBottom: 14,
             }}
           >
@@ -2230,7 +2230,7 @@ export default function InspectionDetailPage() {
                       flexShrink: 0,
                     }}
                   ></div>
-                  <span style={{ color: "#475569", fontSize: 14 }}>{name}</span>
+                  <span style={{ color: "var(--muted)", fontSize: 14 }}>{name}</span>
                 </div>
               ))}
           </div>

@@ -72,8 +72,8 @@ export const ImagePanel: React.FC<ImagePanelProps> = ({
           width: "100%",
           height: 360,
           borderRadius: 8,
-          background: "#f8fafc",
-          border: "1px solid #e5e7eb",
+          background: "var(--card)",
+          border: "1px solid rgba(0, 212, 255, 0.2)",
           overflow: "hidden",
         }}
         onPointerDown={
@@ -185,7 +185,7 @@ export const ImagePanel: React.FC<ImagePanelProps> = ({
               inset: 0,
               display: "grid",
               placeItems: "center",
-              color: "#64748b",
+              color: "var(--muted)",
             }}
           >
             No {which} image uploaded yet
