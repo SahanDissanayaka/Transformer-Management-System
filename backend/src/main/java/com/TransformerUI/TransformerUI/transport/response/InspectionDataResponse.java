@@ -15,4 +15,11 @@ public class InspectionDataResponse {
     private String maintenanceDate;
     private String status;
     private String branch;
+    // Engineer fields
+    private String inspectorName;
+    private String engineerStatus;
+    private String voltage;
+    private String current;
+    private String recommendedAction;
+    private String additionalRemarks;
 }
