@@ -7,6 +7,7 @@ const ITEMS_PER_PAGE = 10;
 
 export default function TransformersPage() {
   const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState<any | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -30,35 +31,99 @@ export default function TransformersPage() {
 
   const handleSubmit = (values: any) => {
     if (editItem) {
-      updateTransformer({ ...editItem, ...values }).then(() =>
-        setEditItem(null)
-      );
+      updateTransformer({ ...editItem, ...values }).then(() => {
+        setEditItem(null);
+        setShowModal(false);
+      });
     } else {
-      createTransformer(values);
+      createTransformer(values).then(() => {
+        setShowModal(false);
+      });
     }
+  };
+
+  const openAddModal = () => {
+    setEditItem(null);
+    setShowModal(true);
+  };
+
+  const openEditModal = (item: any) => {
+    setEditItem(item);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditItem(null);
   };
 
   return (
     <div className="container">
-      <h2 style={{ marginBottom: 12 }}>Transformers</h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h2 style={{ margin: 0 }}>Transformers</h2>
+        <button className="btn primary" onClick={openAddModal}>
+          ➕ Add Transformer
+        </button>
+      </div>
 
-      <TransformerForm
-        initialValues={editItem}
-        onSubmit={handleSubmit}
-        submitting={creating || updating}
-      />
-
-      {editItem && (
-        <p style={{ marginTop: 8, color: "orange" }}>
-          Editing transformer <strong>{editItem.transformerNo}</strong>.
-          <button
-            className="btn secondary"
-            style={{ marginLeft: 8 }}
-            onClick={() => setEditItem(null)}
+      {/* Add/Edit Transformer Modal */}
+      {showModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+          onClick={closeModal}
+        >
+          <div
+            className="card"
+            style={{
+              maxWidth: "500px",
+              width: "90%",
+              padding: "24px",
+            }}
+            onClick={(e) => e.stopPropagation()}
           >
-            Cancel
-          </button>
-        </p>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 20,
+              }}
+            >
+              <h3 style={{ margin: 0 }}>
+                {editItem ? "Edit Transformer" : "Add New Transformer"}
+              </h3>
+              <button
+                onClick={closeModal}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "24px",
+                  cursor: "pointer",
+                  color: "var(--muted)",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <TransformerForm
+              initialValues={editItem}
+              onSubmit={handleSubmit}
+              submitting={creating || updating}
+            />
+          </div>
+        </div>
       )}
 
       <div className="card" style={{ marginTop: 16 }}>
@@ -97,7 +162,7 @@ export default function TransformersPage() {
                           background: "#1e293b",
                           marginRight: 6,
                         }}
-                        onClick={() => setEditItem(t)}
+                        onClick={() => openEditModal(t)}
                       >
                         Edit
                       </button>
