@@ -1,14 +1,8 @@
-# === Core YOLOv8 runtime ===
+numpy==1.26.4
+opencv-python==4.7.0.72
+matplotlib==3.7.1
 ultralytics==8.3.12
-
-# === Image processing ===
-opencv-python==4.10.0.84
-numpy>=1.23.0,<2.0
-
-# === Optional but recommended ===
-matplotlib>=3.5.0   # useful for visualization/debugging
-torch>=2.0.0,<2.3   # YOLOv8 depends on PyTorch (auto-installed with ultralytics)
-torchvision>=0.15.0,<0.18
-
-# === JSON + utility libraries ===
-pillow>=9.0.0
+torch==2.0.1
+torchvision==0.15.2
+pillow
+psutil
