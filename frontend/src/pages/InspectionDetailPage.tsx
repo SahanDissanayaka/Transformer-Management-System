@@ -1,7 +1,13 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
-import { uploadImage, viewImage, type ImgType, type Weather } from "../api/imageDataApi";
+import {
+  uploadImage,
+  viewImage,
+  type ImgType,
+  type Weather,
+} from "../api/imageDataApi";
+import { maintenanceApi } from "../api/maintenanceApi";
 import { loadFeedbackLogs as loadFeedbackLogsAPI } from "../api/detectionApi";
 import { AnomaliesList } from "../components/inspection/AnomaliesList";
 import { ImagePanel } from "../components/inspection/ImagePanel";
@@ -12,9 +18,17 @@ import {
   editAnomaly,
   addAnomaly,
 } from "../services/anomalyService";
-import { normalizeWeather, mapAnomaliestoBoxes } from "../utils/inspectionHelpers";
+import {
+  normalizeWeather,
+  mapAnomaliestoBoxes,
+} from "../utils/inspectionHelpers";
 import { CLASS_COLORS } from "../constants/inspection.constants";
-import type { Box, ThermalMeta, AnomalyResponse, FeedbackLog } from "../types/inspection.types";
+import type {
+  Box,
+  ThermalMeta,
+  AnomalyResponse,
+  FeedbackLog,
+} from "../types/inspection.types";
 
 export default function InspectionDetailPage() {
   const navigate = useNavigate();
@@ -59,9 +73,9 @@ export default function InspectionDetailPage() {
   const [newBoxCoords, setNewBoxCoords] = useState<
     [number, number, number, number] | null
   >(null);
-  const firstClass = Object.keys(CLASS_COLORS).filter(
-    (k) => k !== "default"
-  )[0] || "Loose Joint Faulty";
+  const firstClass =
+    Object.keys(CLASS_COLORS).filter((k) => k !== "default")[0] ||
+    "Loose Joint Faulty";
   const [newAnomalyClass, setNewAnomalyClass] = useState<string>(firstClass);
 
   // Image transforms
@@ -73,7 +87,7 @@ export default function InspectionDetailPage() {
   const [notesList, setNotesList] = useState<
     Array<{ text: string; by: string; at: string }>
   >([]);
-  
+
   // Engineer inputs
   const [engineerInputs, setEngineerInputs] = useState({
     inspectorName: "",
@@ -83,14 +97,12 @@ export default function InspectionDetailPage() {
     recommendedAction: "",
     additionalRemarks: "",
   });
-  
+
   // Maintenance records
+  const [maintenanceRecordId, setMaintenanceRecordId] = useState<number | null>(
+    null
+  );
   const [maintenanceRecord, setMaintenanceRecord] = useState({
-    // Location & Basic Info
-    poleNo: "",
-    locationDetails: "",
-    type: "",
-    inspected: "",
     // Infrared Readings
     irLeft: "",
     irRight: "",
@@ -124,69 +136,626 @@ export default function InspectionDetailPage() {
     css: "",
     cssDate: "",
   });
-  
+
   const [editingEngineer, setEditingEngineer] = useState(false);
   const [savingEngineer, setSavingEngineer] = useState(false);
-  
+
   // inspection passed from navigation state (optional)
   const location = useLocation();
-  const passedInspection: any = (location && (location as any).state && (location as any).state.inspection) || null;
+  const passedInspection: any =
+    (location &&
+      (location as any).state &&
+      (location as any).state.inspection) ||
+    null;
+
+  // State to store fetched inspection from database
+  const [currentInspection, setCurrentInspection] = useState<any>(null);
+  const [transformer, setTransformer] = useState<any>(null);
+
   const { username, role, isAuthenticated } = useAuth();
-  const canEditEngineer = isAuthenticated && role === 'engineer';
+  const canEditEngineer = isAuthenticated && role === "engineer";
+
+  // Fetch inspection data from database if not passed via navigation
+  useEffect(() => {
+    const fetchData = async () => {
+      // Fetch inspection
+      if (!passedInspection && inspectionNo) {
+        try {
+          const { getInspectionById } = await import(
+            "../api/inspectionDataApi"
+          );
+          const inspectionData = await getInspectionById(Number(inspectionNo));
+          if (inspectionData) {
+            // Normalize field names (handle both inspectionDate and inspectedDate)
+            const normalizedInspection = {
+              ...inspectionData,
+              transformerNo: inspectionData.transformerNo || transformerNo,
+              inspectionDate:
+                inspectionData.inspectionDate || inspectionData.inspectedDate,
+            };
+            setCurrentInspection(normalizedInspection);
+            console.log(
+              "Fetched inspection from database:",
+              normalizedInspection
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching inspection:", error);
+        }
+      } else if (passedInspection) {
+        const normalizedInspection = {
+          ...passedInspection,
+          transformerNo: passedInspection.transformerNo || transformerNo,
+          inspectionDate:
+            passedInspection.inspectionDate || passedInspection.inspectedDate,
+        };
+        setCurrentInspection(normalizedInspection);
+      }
+
+      // Fetch transformer data to get pole number
+      if (transformerNo) {
+        try {
+          const { TransformerAPI } = await import("../api/transformerDataApi");
+          // Use filter to find transformer by transformerNo
+          const filters = [
+            {
+              columnName: "transformerNo",
+              value: [transformerNo],
+              operation: "Equal",
+            },
+          ];
+          const transformerData = await TransformerAPI.filter(filters, 0, 1);
+          if (transformerData && transformerData.length > 0) {
+            setTransformer(transformerData[0]);
+            console.log("Fetched transformer data:", transformerData[0]);
+          }
+        } catch (error) {
+          console.error("Error fetching transformer:", error);
+        }
+      }
+    };
+
+    fetchData();
+  }, [inspectionNo, transformerNo]);
+
+  // Fetch maintenance record from database
+  useEffect(() => {
+    const fetchMaintenanceRecord = async () => {
+      if (currentInspection?.id) {
+        try {
+          console.log(
+            "Fetching maintenance record for inspection ID:",
+            currentInspection.id
+          );
+          const response = await maintenanceApi.getByInspectionId(
+            currentInspection.id
+          );
+          console.log("Maintenance record fetch response:", response);
+
+          if (response.responseCode == 2000 && response.responseData) {
+            const data = Array.isArray(response.responseData)
+              ? response.responseData[0]
+              : response.responseData;
+
+            console.log("Maintenance data to load:", data);
+
+            if (data) {
+              // Store the maintenance record ID for updates
+              if (data.id) {
+                setMaintenanceRecordId(data.id);
+                console.log("Stored maintenance record ID:", data.id);
+              }
+              setMaintenanceRecord({
+                irLeft: data.irLeft || "",
+                irRight: data.irRight || "",
+                irFront: data.irFront || "",
+                lastMonthKva: data.lastMonthKva || "",
+                lastMonthDate: data.lastMonthDate || "",
+                lastMonthTime: data.lastMonthTime || "",
+                currentMonthKva: data.currentMonthKva || "",
+                serial: data.serial || "",
+                meterCtRatio: data.meterCtRatio || "",
+                make: data.make || "",
+                startTime: data.startTime || "",
+                completionTime: data.completionTime || "",
+                supervisedBy: data.supervisedBy || "",
+                techI: data.techI || "",
+                techII: data.techII || "",
+                techIII: data.techIII || "",
+                helpers: data.helpers || "",
+                inspectedBy: data.inspectedBy || "",
+                inspectedByDate: data.inspectedByDate || "",
+                reflectedBy: data.reflectedBy || "",
+                reflectedByDate: data.reflectedByDate || "",
+                reInspectedBy: data.reInspectedBy || "",
+                reInspectedByDate: data.reInspectedByDate || "",
+                css: data.css || "",
+                cssDate: data.cssDate || "",
+              });
+              console.log("Maintenance record loaded successfully!");
+            }
+          } else {
+            console.log(
+              "No maintenance data or wrong response code:",
+              response.responseCode
+            );
+          }
+        } catch (error) {
+          console.log("No maintenance record found or error fetching:", error);
+        }
+      }
+    };
+
+    fetchMaintenanceRecord();
+  }, [currentInspection?.id]);
 
   useEffect(() => {
-    if (passedInspection) {
+    if (currentInspection) {
       // Prefill engineer inputs
       setEngineerInputs({
-        inspectorName: passedInspection.inspectorName || "",
-        engineerStatus: passedInspection.engineerStatus || "OK",
-        voltage: passedInspection.voltage || "",
-        current: passedInspection.current || "",
-        recommendedAction: passedInspection.recommendedAction || "",
-        additionalRemarks: passedInspection.additionalRemarks || "",
+        inspectorName: currentInspection.inspectorName || "",
+        engineerStatus: currentInspection.engineerStatus || "OK",
+        voltage: currentInspection.voltage || "",
+        current: currentInspection.current || "",
+        recommendedAction: currentInspection.recommendedAction || "",
+        additionalRemarks: currentInspection.additionalRemarks || "",
       });
-      
-      // Prefill maintenance record (if it exists)
-      if (passedInspection.maintenanceRecord) {
+
+      // Prefill maintenance record (if it exists in passed state)
+      if (currentInspection.maintenanceRecord) {
         setMaintenanceRecord({
-          poleNo: passedInspection.maintenanceRecord.poleNo || "",
-          locationDetails: passedInspection.maintenanceRecord.locationDetails || "",
-          type: passedInspection.maintenanceRecord.type || "",
-          inspected: passedInspection.maintenanceRecord.inspected || "",
-          irLeft: passedInspection.maintenanceRecord.irLeft || "",
-          irRight: passedInspection.maintenanceRecord.irRight || "",
-          irFront: passedInspection.maintenanceRecord.irFront || "",
-          lastMonthKva: passedInspection.maintenanceRecord.lastMonthKva || "",
-          lastMonthDate: passedInspection.maintenanceRecord.lastMonthDate || "",
-          lastMonthTime: passedInspection.maintenanceRecord.lastMonthTime || "",
-          currentMonthKva: passedInspection.maintenanceRecord.currentMonthKva || "",
-          serial: passedInspection.maintenanceRecord.serial || "",
-          meterCtRatio: passedInspection.maintenanceRecord.meterCtRatio || "",
-          make: passedInspection.maintenanceRecord.make || "",
-          startTime: passedInspection.maintenanceRecord.startTime || "",
-          completionTime: passedInspection.maintenanceRecord.completionTime || "",
-          supervisedBy: passedInspection.maintenanceRecord.supervisedBy || "",
-          techI: passedInspection.maintenanceRecord.techI || "",
-          techII: passedInspection.maintenanceRecord.techII || "",
-          techIII: passedInspection.maintenanceRecord.techIII || "",
-          helpers: passedInspection.maintenanceRecord.helpers || "",
-          inspectedBy: passedInspection.maintenanceRecord.inspectedBy || "",
-          inspectedByDate: passedInspection.maintenanceRecord.inspectedByDate || "",
-          reflectedBy: passedInspection.maintenanceRecord.reflectedBy || "",
-          reflectedByDate: passedInspection.maintenanceRecord.reflectedByDate || "",
-          reInspectedBy: passedInspection.maintenanceRecord.reInspectedBy || "",
-          reInspectedByDate: passedInspection.maintenanceRecord.reInspectedByDate || "",
-          css: passedInspection.maintenanceRecord.css || "",
-          cssDate: passedInspection.maintenanceRecord.cssDate || "",
+          irLeft: currentInspection.maintenanceRecord.irLeft || "",
+          irRight: currentInspection.maintenanceRecord.irRight || "",
+          irFront: currentInspection.maintenanceRecord.irFront || "",
+          lastMonthKva: currentInspection.maintenanceRecord.lastMonthKva || "",
+          lastMonthDate:
+            currentInspection.maintenanceRecord.lastMonthDate || "",
+          lastMonthTime:
+            currentInspection.maintenanceRecord.lastMonthTime || "",
+          currentMonthKva:
+            currentInspection.maintenanceRecord.currentMonthKva || "",
+          serial: currentInspection.maintenanceRecord.serial || "",
+          meterCtRatio: currentInspection.maintenanceRecord.meterCtRatio || "",
+          make: currentInspection.maintenanceRecord.make || "",
+          startTime: currentInspection.maintenanceRecord.startTime || "",
+          completionTime:
+            currentInspection.maintenanceRecord.completionTime || "",
+          supervisedBy: currentInspection.maintenanceRecord.supervisedBy || "",
+          techI: currentInspection.maintenanceRecord.techI || "",
+          techII: currentInspection.maintenanceRecord.techII || "",
+          techIII: currentInspection.maintenanceRecord.techIII || "",
+          helpers: currentInspection.maintenanceRecord.helpers || "",
+          inspectedBy: currentInspection.maintenanceRecord.inspectedBy || "",
+          inspectedByDate:
+            currentInspection.maintenanceRecord.inspectedByDate || "",
+          reflectedBy: currentInspection.maintenanceRecord.reflectedBy || "",
+          reflectedByDate:
+            currentInspection.maintenanceRecord.reflectedByDate || "",
+          reInspectedBy:
+            currentInspection.maintenanceRecord.reInspectedBy || "",
+          reInspectedByDate:
+            currentInspection.maintenanceRecord.reInspectedByDate || "",
+          css: currentInspection.maintenanceRecord.css || "",
+          cssDate: currentInspection.maintenanceRecord.cssDate || "",
         });
       }
     }
-  }, [passedInspection]);
+  }, [currentInspection]);
 
   // Note: boxes are displayed via HTML overlays now, rendered directly in JSX below
 
+  const generatePDF = async () => {
+    // Create a canvas with the thermal image and bounding boxes
+    let thermalImageWithBoxes = thermal;
+
+    if (
+      thermal &&
+      Array.isArray(thermalMeta?.boxes) &&
+      thermalMeta.boxes.length > 0
+    ) {
+      try {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+
+        await new Promise((resolve, reject) => {
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d");
+
+            if (ctx) {
+              // Draw the image
+              ctx.drawImage(img, 0, 0);
+
+              // Draw bounding boxes
+              thermalMeta.boxes.forEach((box: any) => {
+                if (box.n && Array.isArray(box.n) && box.n.length === 4) {
+                  const [x1, y1, x2, y2] = box.n;
+                  const left = Math.min(x1, x2) * img.width;
+                  const top = Math.min(y1, y2) * img.height;
+                  const width = Math.abs(x2 - x1) * img.width;
+                  const height = Math.abs(y2 - y1) * img.height;
+
+                  // Draw box
+                  ctx.strokeStyle = box.color || "#ff0000";
+                  ctx.lineWidth = 4;
+                  ctx.strokeRect(left, top, width, height);
+
+                  // Draw label background
+                  const label = box.klass || "Anomaly";
+                  ctx.font = "bold 16px Arial";
+                  const textWidth = ctx.measureText(label).width;
+                  ctx.fillStyle = box.color || "#ff0000";
+                  ctx.fillRect(left, top - 26, textWidth + 12, 26);
+
+                  // Draw label text
+                  ctx.fillStyle = "#ffffff";
+                  ctx.fillText(label, left + 6, top - 7);
+                }
+              });
+
+              thermalImageWithBoxes = canvas.toDataURL("image/png");
+            }
+            resolve(true);
+          };
+          img.onerror = reject;
+          img.src = thermal;
+        });
+      } catch (error) {
+        console.error("Error drawing boxes on image:", error);
+      }
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow pop-ups to generate PDF");
+      return;
+    }
+
+    const pdfContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Maintenance Record - ${transformerNo} - Inspection ${inspectionNo}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 40px; }
+          h1 { text-align: center; color: #1e293b; }
+          h2 { color: #475569; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; margin-top: 24px; page-break-after: avoid; }
+          h3 { color: #475569; margin-top: 16px; page-break-after: avoid; }
+          .section { margin-bottom: 24px; page-break-inside: avoid; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+          .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+          .field { margin-bottom: 12px; }
+          .label { font-weight: bold; color: #475569; display: block; margin-bottom: 4px; }
+          .value { border: 1px solid #cbd5e1; padding: 8px; background: #f8fafc; display: block; }
+          .anomaly-item { page-break-inside: avoid; }
+          @media print { body { margin: 20px; } }
+        </style>
+      </head>
+      <body>
+        <h1>Transformer Maintenance Record</h1>
+        
+        <div class="section">
+          <h2>Inspection Details</h2>
+          <div class="grid-3">
+            <div class="field">
+              <span class="label">Transformer No:</span>
+              <span class="value">${transformerNo || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">Pole No:</span>
+              <span class="value">${transformer?.poleNo || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">Branch:</span>
+              <span class="value">${currentInspection?.branch || ""}</span>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="field">
+              <span class="label">Date of Inspection:</span>
+              <span class="value">${(() => {
+                const dateStr = currentInspection?.inspectionDate || "";
+                if (!dateStr) return "";
+                if (dateStr.includes("T")) return dateStr.split("T")[0];
+                const timePattern = /\d{1,2}:\d{2}\s*(AM|PM)?/i;
+                if (timePattern.test(dateStr))
+                  return dateStr.replace(timePattern, "").trim();
+                return dateStr;
+              })()}</span>
+            </div>
+            <div class="field">
+              <span class="label">Time:</span>
+              <span class="value">${(() => {
+                if (currentInspection?.time) return currentInspection.time;
+                const dateStr = currentInspection?.inspectionDate || "";
+                const timeMatch = dateStr.match(/\d{1,2}:\d{2}\s*(AM|PM)?/i);
+                return timeMatch ? timeMatch[0] : "";
+              })()}</span>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="field">
+              <span class="label">Location Details:</span>
+              <span class="value">${transformer?.locationDetails || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">Type:</span>
+              <span class="value">${transformer?.type || ""}</span>
+            </div>
+          </div>
+        </div>
+
+        ${
+          thermalImageWithBoxes
+            ? `
+        <div class="section">
+          <h2>Thermal Image</h2>
+          <div style="text-align: center; margin: 20px 0;">
+            <img src="${thermalImageWithBoxes}" alt="Thermal Image" style="max-width: 100%; height: auto; border: 1px solid #cbd5e1;" />
+          </div>
+          ${
+            Array.isArray(thermalMeta?.boxes) && thermalMeta.boxes.length > 0
+              ? `
+          <div style="page-break-before: always;"></div>
+          <h3 style="margin-top: 24px; color: #475569;">Detected Anomalies</h3>
+          <div style="display: grid; gap: 12px;">
+            ${thermalMeta.boxes
+              .map(
+                (b: any, idx: number) => `
+              <div class="anomaly-item" style="background-color: #f9fafb; border: 1px solid ${
+                b.color || "#ff0000"
+              }; border-left: 4px solid ${
+                  b.color || "#ff0000"
+                }; padding: 12px; border-radius: 6px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                  <div style="width: 12px; height: 12px; background-color: ${
+                    b.color || "#ff0000"
+                  }; border-radius: 2px;"></div>
+                  <span style="font-weight: 600; color: #1f2937;">${
+                    b.klass || "Anomaly"
+                  } #${idx + 1}</span>
+                </div>
+                ${
+                  b.confidence
+                    ? `<div style="margin-bottom: 4px; color: #666;"><strong>Confidence:</strong> ${(
+                        b.confidence * 100
+                      ).toFixed(1)}%</div>`
+                    : ""
+                }
+                ${
+                  b.details
+                    ? `<div style="margin-bottom: 4px; color: #666;"><strong>Details:</strong> ${b.details}</div>`
+                    : ""
+                }
+                <div style="color: #666; font-size: 12px;">
+                  <strong>Detection:</strong> ${
+                    b.aiDetected !== false ? "AI Detected" : "Manually Selected"
+                  }
+                </div>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+          `
+              : ""
+          }
+        </div>
+        `
+            : ""
+        }
+
+        <div class="section">
+          <h2>Engineer Assessment</h2>
+          <div class="field">
+            <span class="label">Inspected by:</span>
+            <span class="value">${engineerInputs.inspectorName || ""}</span>
+          </div>
+          <div class="field">
+            <span class="label">Transformer Status:</span>
+            <span class="value">${engineerInputs.engineerStatus || ""}</span>
+          </div>
+          <div class="grid">
+            <div class="field">
+              <span class="label">Voltage (V):</span>
+              <span class="value">${engineerInputs.voltage || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">Current (A):</span>
+              <span class="value">${engineerInputs.current || ""}</span>
+            </div>
+          </div>
+          <div class="field">
+            <span class="label">Recommended Action:</span>
+            <span class="value">${engineerInputs.recommendedAction || ""}</span>
+          </div>
+          <div class="field">
+            <span class="label">Additional Remarks:</span>
+            <span class="value">${engineerInputs.additionalRemarks || ""}</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Infrared Readings</h2>
+          <div class="grid-3">
+            <div class="field">
+              <span class="label">IR Left:</span>
+              <span class="value">${maintenanceRecord.irLeft || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">IR Right:</span>
+              <span class="value">${maintenanceRecord.irRight || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">IR Front:</span>
+              <span class="value">${maintenanceRecord.irFront || ""}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Power Readings</h2>
+          <div class="grid-3">
+            <div class="field">
+              <span class="label">Last Month KVA:</span>
+              <span class="value">${maintenanceRecord.lastMonthKva || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">Last Month Date:</span>
+              <span class="value">${
+                maintenanceRecord.lastMonthDate || ""
+              }</span>
+            </div>
+            <div class="field">
+              <span class="label">Last Month Time:</span>
+              <span class="value">${
+                maintenanceRecord.lastMonthTime || ""
+              }</span>
+            </div>
+          </div>
+          <div class="field">
+            <span class="label">Current Month KVA:</span>
+            <span class="value">${
+              maintenanceRecord.currentMonthKva || ""
+            }</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Equipment Details</h2>
+          <div class="grid-3">
+            <div class="field">
+              <span class="label">Serial:</span>
+              <span class="value">${maintenanceRecord.serial || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">Meter CT Ratio:</span>
+              <span class="value">${maintenanceRecord.meterCtRatio || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">Make:</span>
+              <span class="value">${maintenanceRecord.make || ""}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Maintenance Personnel & Timings</h2>
+          <div class="grid">
+            <div class="field">
+              <span class="label">Start Time:</span>
+              <span class="value">${maintenanceRecord.startTime || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">Completion Time:</span>
+              <span class="value">${
+                maintenanceRecord.completionTime || ""
+              }</span>
+            </div>
+          </div>
+          <div class="field">
+            <span class="label">Supervised By:</span>
+            <span class="value">${maintenanceRecord.supervisedBy || ""}</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Technicians & Helpers</h2>
+          <div class="grid">
+            <div class="field">
+              <span class="label">Tech I:</span>
+              <span class="value">${maintenanceRecord.techI || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">Tech II:</span>
+              <span class="value">${maintenanceRecord.techII || ""}</span>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="field">
+              <span class="label">Tech III:</span>
+              <span class="value">${maintenanceRecord.techIII || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">Helpers:</span>
+              <span class="value">${maintenanceRecord.helpers || ""}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Inspection Sign-offs</h2>
+          <div class="grid">
+            <div class="field">
+              <span class="label">Inspected By:</span>
+              <span class="value">${maintenanceRecord.inspectedBy || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">Date:</span>
+              <span class="value">${
+                maintenanceRecord.inspectedByDate || ""
+              }</span>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="field">
+              <span class="label">Reflected By:</span>
+              <span class="value">${maintenanceRecord.reflectedBy || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">Date:</span>
+              <span class="value">${
+                maintenanceRecord.reflectedByDate || ""
+              }</span>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="field">
+              <span class="label">Re-Inspected By:</span>
+              <span class="value">${
+                maintenanceRecord.reInspectedBy || ""
+              }</span>
+            </div>
+            <div class="field">
+              <span class="label">Date:</span>
+              <span class="value">${
+                maintenanceRecord.reInspectedByDate || ""
+              }</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>CSS</h2>
+          <div class="grid">
+            <div class="field">
+              <span class="label">CSS:</span>
+              <span class="value">${maintenanceRecord.css || ""}</span>
+            </div>
+            <div class="field">
+              <span class="label">CSS Date:</span>
+              <span class="value">${maintenanceRecord.cssDate || ""}</span>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(pdfContent);
+    printWindow.document.close();
+  };
+
   const handleSaveEngineerInputs = async () => {
-    if (!passedInspection || !passedInspection.id) {
+    if (!currentInspection || !currentInspection.id) {
       alert("Cannot save: inspection not found.");
       return;
     }
@@ -194,56 +763,84 @@ export default function InspectionDetailPage() {
     try {
       // Save engineer inputs
       const engineerPayload = {
-        id: passedInspection.id,
-        transformerNo: passedInspection.transformerNo,
-        branch: passedInspection.branch,
-        inspectionDate: passedInspection.inspectionDate,
-        time: passedInspection.time,
-        status: passedInspection.status,
-        maintenanceDate: passedInspection.maintenanceDate,
+        id: currentInspection.id,
+        transformerNo: transformerNo,
+        branch: currentInspection.branch,
+        inspectionDate: currentInspection.inspectionDate,
+        time: currentInspection.time,
+        status: currentInspection.status,
+        maintenanceDate: currentInspection.maintenanceDate,
         ...engineerInputs,
       };
       const { updateInspection } = await import("../api/inspectionDataApi");
       await updateInspection(engineerPayload);
 
-      // Save maintenance record if any field is filled
-      const hasMaintenanceData = Object.values(maintenanceRecord).some(v => v && v.toString().trim() !== '');
+      // Save or update maintenance record if any field is filled
+      const hasMaintenanceData = Object.values(maintenanceRecord).some(
+        (v) => v && v.toString().trim() !== ""
+      );
       if (hasMaintenanceData) {
         const maintenancePayload = {
-          inspectionId: passedInspection.id,
+          ...(maintenanceRecordId && { id: maintenanceRecordId }),
+          inspectionId: currentInspection.id,
+          // Include transformer and inspection details
+          transformerNo: transformerNo,
+          poleNo: transformer?.poleNo || "",
+          locationDetails: transformer?.locationDetails || "",
+          type: transformer?.type || "",
+          branch: currentInspection.branch,
+          inspectionDate: currentInspection.inspectionDate,
+          time: currentInspection.time,
           ...maintenanceRecord,
         };
-        
+
         try {
-          const response = await fetch('/api/maintenanceRecord/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(maintenancePayload),
-          });
-          
-          if (!response.ok) {
-            console.warn('Maintenance record save warning (engineer inputs saved)', response.statusText);
+          let response;
+          if (maintenanceRecordId) {
+            // Update existing record
+            console.log("Updating maintenance record ID:", maintenanceRecordId);
+            response = await maintenanceApi.update(maintenancePayload);
+          } else {
+            // Create new record
+            console.log("Creating new maintenance record");
+            response = await maintenanceApi.save(maintenancePayload);
+            // Store the new ID if returned
+            if (response.responseData && response.responseData.id) {
+              setMaintenanceRecordId(response.responseData.id);
+            }
+          }
+
+          if (response.responseCode != 2000) {
+            console.warn(
+              "Maintenance record save warning:",
+              response.responseDescription
+            );
           }
         } catch (err) {
-          console.warn('Maintenance record save failed (engineer inputs saved)', err);
+          console.warn(
+            "Maintenance record save failed (engineer inputs saved)",
+            err
+          );
         }
       }
-      
+
       // Close edit mode
       setEditingEngineer(false);
-      
+
       // Show brief success message
-      const successMsg = document.createElement('div');
-      successMsg.textContent = '✅ Saved';
-      successMsg.style.cssText = 'position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:12px 20px;border-radius:6px;z-index:9999;font-weight:bold;';
+      const successMsg = document.createElement("div");
+      successMsg.textContent = "✅ Saved";
+      successMsg.style.cssText =
+        "position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:12px 20px;border-radius:6px;z-index:9999;font-weight:bold;";
       document.body.appendChild(successMsg);
       setTimeout(() => successMsg.remove(), 2000);
     } catch (error) {
       console.error("Failed to save inspector inputs:", error);
       // Show error message
-      const errorMsg = document.createElement('div');
-      errorMsg.textContent = '❌ Failed to save';
-      errorMsg.style.cssText = 'position:fixed;top:20px;right:20px;background:#ef4444;color:white;padding:12px 20px;border-radius:6px;z-index:9999;font-weight:bold;';
+      const errorMsg = document.createElement("div");
+      errorMsg.textContent = "❌ Failed to save";
+      errorMsg.style.cssText =
+        "position:fixed;top:20px;right:20px;background:#ef4444;color:white;padding:12px 20px;border-radius:6px;z-index:9999;font-weight:bold;";
       document.body.appendChild(errorMsg);
       setTimeout(() => errorMsg.remove(), 3000);
     } finally {
@@ -413,8 +1010,8 @@ export default function InspectionDetailPage() {
       {/* Engineer Inputs Button */}
       {canEditEngineer && (
         <div style={{ marginBottom: 16 }}>
-          <button 
-            className="btn primary" 
+          <button
+            className="btn primary"
             onClick={() => setEditingEngineer(true)}
           >
             ✏️ Inspection Form
@@ -424,49 +1021,242 @@ export default function InspectionDetailPage() {
 
       {/* Engineer Inputs Modal */}
       {editingEngineer && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-        }}>
-          <div className="card" style={{
-            maxWidth: '1200px',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            padding: '24px',
-            width: '90%',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            className="card"
+            style={{
+              maxWidth: "1200px",
+              maxHeight: "90vh",
+              overflow: "auto",
+              padding: "24px",
+              width: "90%",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 20,
+              }}
+            >
               <h3 style={{ margin: 0 }}>Inspection Form</h3>
-              <button 
+              <button
                 className="btn"
                 onClick={() => setEditingEngineer(false)}
-                style={{ padding: '6px 12px', fontSize: '14px', background: '#e5e7eb', border: 'none', cursor: 'pointer', borderRadius: '4px' }}
+                style={{
+                  padding: "6px 12px",
+                  fontSize: "14px",
+                  background: "#e5e7eb",
+                  border: "none",
+                  cursor: "pointer",
+                  borderRadius: "4px",
+                }}
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, maxHeight: 'calc(90vh - 100px)', overflow: 'auto' }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 24,
+                maxHeight: "calc(90vh - 100px)",
+                overflow: "auto",
+              }}
+            >
               {/* Left side - Form inputs - Scrollable */}
-              <div style={{ overflowY: 'auto', paddingRight: 12 }}>
+              <div style={{ overflowY: "auto", paddingRight: 12 }}>
                 {/* ===== Engineer Fields ===== */}
-                <h5 style={{ marginTop: 0, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Engineer Information</h5>
-                
+                <h5
+                  style={{
+                    marginTop: 0,
+                    marginBottom: 16,
+                    fontSize: "15px",
+                    fontWeight: "600",
+                    color: "#1f2937",
+                  }}
+                >
+                  Inspection Details
+                </h5>
+
+                {/* Read-only inspection info */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: 12,
+                    marginBottom: 12,
+                  }}
+                >
+                  <div>
+                    <label>Transformer No</label>
+                    <input
+                      type="text"
+                      value={transformerNo || ""}
+                      disabled
+                      style={{
+                        backgroundColor: "#f3f4f6",
+                        cursor: "not-allowed",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label>Pole No</label>
+                    <input
+                      type="text"
+                      value={transformer?.poleNo || ""}
+                      disabled
+                      style={{
+                        backgroundColor: "#f3f4f6",
+                        cursor: "not-allowed",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label>Branch</label>
+                    <input
+                      type="text"
+                      value={currentInspection?.branch || ""}
+                      disabled
+                      style={{
+                        backgroundColor: "#f3f4f6",
+                        cursor: "not-allowed",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 12,
+                    marginBottom: 12,
+                  }}
+                >
+                  <div>
+                    <label>Date of Inspection</label>
+                    <input
+                      type="text"
+                      value={(() => {
+                        const dateStr = currentInspection?.inspectionDate || "";
+                        if (!dateStr) return "";
+                        // Handle ISO format (2025-10-03T15:17:00)
+                        if (dateStr.includes("T")) {
+                          return dateStr.split("T")[0];
+                        }
+                        // Handle formatted string like "Fri(03), Oct, 2025 03:17 PM"
+                        // Extract just the date part (everything before time)
+                        const timePattern = /\d{1,2}:\d{2}\s*(AM|PM)?/i;
+                        if (timePattern.test(dateStr)) {
+                          return dateStr.replace(timePattern, "").trim();
+                        }
+                        return dateStr;
+                      })()}
+                      disabled
+                      style={{
+                        backgroundColor: "#f3f4f6",
+                        cursor: "not-allowed",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label>Time</label>
+                    <input
+                      type="text"
+                      value={(() => {
+                        // First check if time field exists separately
+                        if (currentInspection?.time)
+                          return currentInspection.time;
+                        // Extract time from formatted date string
+                        const dateStr = currentInspection?.inspectionDate || "";
+                        const timeMatch = dateStr.match(
+                          /\d{1,2}:\d{2}\s*(AM|PM)?/i
+                        );
+                        return timeMatch ? timeMatch[0] : "";
+                      })()}
+                      disabled
+                      style={{
+                        backgroundColor: "#f3f4f6",
+                        cursor: "not-allowed",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 12,
+                    marginBottom: 12,
+                  }}
+                >
+                  <div>
+                    <label>Location Details</label>
+                    <input
+                      type="text"
+                      value={transformer?.locationDetails || ""}
+                      disabled
+                      style={{
+                        backgroundColor: "#f3f4f6",
+                        cursor: "not-allowed",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label>Type</label>
+                    <input
+                      type="text"
+                      value={transformer?.type || ""}
+                      disabled
+                      style={{
+                        backgroundColor: "#f3f4f6",
+                        cursor: "not-allowed",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <h5
+                  style={{
+                    marginTop: 24,
+                    marginBottom: 16,
+                    fontSize: "15px",
+                    fontWeight: "600",
+                    color: "#1f2937",
+                  }}
+                >
+                  Engineer Information
+                </h5>
+
                 <div style={{ marginBottom: 12 }}>
-                  <label>Inspector Name</label>
+                  <label>Inspected by</label>
                   <input
                     type="text"
-                    placeholder="Inspector name"
+                    placeholder="Inspected by"
                     value={engineerInputs.inspectorName}
-                    onChange={(e) => setEngineerInputs({ ...engineerInputs, inspectorName: e.target.value })}
+                    onChange={(e) =>
+                      setEngineerInputs({
+                        ...engineerInputs,
+                        inspectorName: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -474,7 +1264,12 @@ export default function InspectionDetailPage() {
                   <label>Transformer Status</label>
                   <select
                     value={engineerInputs.engineerStatus}
-                    onChange={(e) => setEngineerInputs({ ...engineerInputs, engineerStatus: e.target.value })}
+                    onChange={(e) =>
+                      setEngineerInputs({
+                        ...engineerInputs,
+                        engineerStatus: e.target.value,
+                      })
+                    }
                   >
                     <option value="OK">OK</option>
                     <option value="Needs Maintenance">Needs Maintenance</option>
@@ -482,7 +1277,14 @@ export default function InspectionDetailPage() {
                   </select>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 12,
+                    marginBottom: 12,
+                  }}
+                >
                   <div>
                     <label>Voltage (V)</label>
                     <input
@@ -490,7 +1292,12 @@ export default function InspectionDetailPage() {
                       step="any"
                       placeholder="Voltage"
                       value={engineerInputs.voltage}
-                      onChange={(e) => setEngineerInputs({ ...engineerInputs, voltage: e.target.value })}
+                      onChange={(e) =>
+                        setEngineerInputs({
+                          ...engineerInputs,
+                          voltage: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div>
@@ -500,7 +1307,12 @@ export default function InspectionDetailPage() {
                       step="any"
                       placeholder="Current"
                       value={engineerInputs.current}
-                      onChange={(e) => setEngineerInputs({ ...engineerInputs, current: e.target.value })}
+                      onChange={(e) =>
+                        setEngineerInputs({
+                          ...engineerInputs,
+                          current: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -510,7 +1322,12 @@ export default function InspectionDetailPage() {
                   <textarea
                     placeholder="Recommended action"
                     value={engineerInputs.recommendedAction}
-                    onChange={(e) => setEngineerInputs({ ...engineerInputs, recommendedAction: e.target.value })}
+                    onChange={(e) =>
+                      setEngineerInputs({
+                        ...engineerInputs,
+                        recommendedAction: e.target.value,
+                      })
+                    }
                     rows={2}
                   />
                 </div>
@@ -520,65 +1337,62 @@ export default function InspectionDetailPage() {
                   <textarea
                     placeholder="Additional remarks"
                     value={engineerInputs.additionalRemarks}
-                    onChange={(e) => setEngineerInputs({ ...engineerInputs, additionalRemarks: e.target.value })}
+                    onChange={(e) =>
+                      setEngineerInputs({
+                        ...engineerInputs,
+                        additionalRemarks: e.target.value,
+                      })
+                    }
                     rows={2}
                   />
                 </div>
 
                 {/* ===== Maintenance Part 1 ===== */}
-                <h5 style={{ marginTop: 24, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Location & Basic Info</h5>
-
-                <div style={{ marginBottom: 12 }}>
-                  <label>Pole No</label>
-                  <input
-                    type="text"
-                    placeholder="Pole number"
-                    value={maintenanceRecord.poleNo}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, poleNo: e.target.value })}
-                  />
-                </div>
-
-                <div style={{ marginBottom: 12 }}>
-                  <label>Location Details</label>
-                  <input
-                    type="text"
-                    placeholder="Location details"
-                    value={maintenanceRecord.locationDetails}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, locationDetails: e.target.value })}
-                  />
-                </div>
-
-                <div style={{ marginBottom: 12 }}>
-                  <label>Type</label>
-                  <input
-                    type="text"
-                    placeholder="Type"
-                    value={maintenanceRecord.type}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, type: e.target.value })}
-                  />
-                </div>
-
-                <div style={{ marginBottom: 12 }}>
-                  <label>Inspected</label>
-                  <input
-                    type="text"
-                    placeholder="Inspected"
-                    value={maintenanceRecord.inspected}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, inspected: e.target.value })}
-                  />
-                </div>
+                <h5
+                  style={{
+                    marginTop: 24,
+                    marginBottom: 16,
+                    fontSize: "15px",
+                    fontWeight: "600",
+                    color: "#1f2937",
+                  }}
+                >
+                  Infrared Readings
+                </h5>
 
                 {/* ===== IR Readings ===== */}
-                <h5 style={{ marginTop: 24, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Infrared Readings</h5>
+                <h5
+                  style={{
+                    marginTop: 24,
+                    marginBottom: 16,
+                    fontSize: "15px",
+                    fontWeight: "600",
+                    color: "#1f2937",
+                  }}
+                >
+                  Infrared Readings
+                </h5>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: 12,
+                    marginBottom: 12,
+                  }}
+                >
                   <div>
                     <label>IR Left</label>
                     <input
                       type="text"
                       placeholder="Left"
                       value={maintenanceRecord.irLeft}
-                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, irLeft: e.target.value })}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          irLeft: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div>
@@ -587,7 +1401,12 @@ export default function InspectionDetailPage() {
                       type="text"
                       placeholder="Right"
                       value={maintenanceRecord.irRight}
-                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, irRight: e.target.value })}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          irRight: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div>
@@ -596,13 +1415,28 @@ export default function InspectionDetailPage() {
                       type="text"
                       placeholder="Front"
                       value={maintenanceRecord.irFront}
-                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, irFront: e.target.value })}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          irFront: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
 
                 {/* ===== Power Readings ===== */}
-                <h5 style={{ marginTop: 24, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Power Readings</h5>
+                <h5
+                  style={{
+                    marginTop: 24,
+                    marginBottom: 16,
+                    fontSize: "15px",
+                    fontWeight: "600",
+                    color: "#1f2937",
+                  }}
+                >
+                  Power Readings
+                </h5>
 
                 <div style={{ marginBottom: 12 }}>
                   <label>Last Month KVA</label>
@@ -610,18 +1444,35 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Last month KVA"
                     value={maintenanceRecord.lastMonthKva}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, lastMonthKva: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        lastMonthKva: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 12,
+                    marginBottom: 12,
+                  }}
+                >
                   <div>
                     <label>Last Month Date</label>
                     <input
                       type="text"
                       placeholder="Date"
                       value={maintenanceRecord.lastMonthDate}
-                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, lastMonthDate: e.target.value })}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          lastMonthDate: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div>
@@ -630,7 +1481,12 @@ export default function InspectionDetailPage() {
                       type="text"
                       placeholder="Time"
                       value={maintenanceRecord.lastMonthTime}
-                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, lastMonthTime: e.target.value })}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          lastMonthTime: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -641,12 +1497,27 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Current month KVA"
                     value={maintenanceRecord.currentMonthKva}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, currentMonthKva: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        currentMonthKva: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
                 {/* ===== Equipment Details ===== */}
-                <h5 style={{ marginTop: 24, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Equipment Details</h5>
+                <h5
+                  style={{
+                    marginTop: 24,
+                    marginBottom: 16,
+                    fontSize: "15px",
+                    fontWeight: "600",
+                    color: "#1f2937",
+                  }}
+                >
+                  Equipment Details
+                </h5>
 
                 <div style={{ marginBottom: 12 }}>
                   <label>Serial No</label>
@@ -654,18 +1525,35 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Serial number"
                     value={maintenanceRecord.serial}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, serial: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        serial: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 12,
+                    marginBottom: 12,
+                  }}
+                >
                   <div>
                     <label>Meter CT Ratio</label>
                     <input
                       type="text"
                       placeholder="CT Ratio"
                       value={maintenanceRecord.meterCtRatio}
-                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, meterCtRatio: e.target.value })}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          meterCtRatio: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div>
@@ -674,22 +1562,49 @@ export default function InspectionDetailPage() {
                       type="text"
                       placeholder="Manufacturer"
                       value={maintenanceRecord.make}
-                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, make: e.target.value })}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          make: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
 
                 {/* ===== Maintenance Part 2 ===== */}
-                <h5 style={{ marginTop: 24, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Maintenance Personnel & Timings</h5>
+                <h5
+                  style={{
+                    marginTop: 24,
+                    marginBottom: 16,
+                    fontSize: "15px",
+                    fontWeight: "600",
+                    color: "#1f2937",
+                  }}
+                >
+                  Maintenance Personnel & Timings
+                </h5>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 12,
+                    marginBottom: 12,
+                  }}
+                >
                   <div>
                     <label>Start Time</label>
                     <input
                       type="text"
                       placeholder="Start time"
                       value={maintenanceRecord.startTime}
-                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, startTime: e.target.value })}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          startTime: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div>
@@ -698,7 +1613,12 @@ export default function InspectionDetailPage() {
                       type="text"
                       placeholder="Completion time"
                       value={maintenanceRecord.completionTime}
-                      onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, completionTime: e.target.value })}
+                      onChange={(e) =>
+                        setMaintenanceRecord({
+                          ...maintenanceRecord,
+                          completionTime: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -709,7 +1629,12 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Supervisor name"
                     value={maintenanceRecord.supervisedBy}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, supervisedBy: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        supervisedBy: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -719,7 +1644,12 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Technician I name"
                     value={maintenanceRecord.techI}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, techI: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        techI: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -729,7 +1659,12 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Technician II name"
                     value={maintenanceRecord.techII}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, techII: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        techII: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -739,7 +1674,12 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Technician III name"
                     value={maintenanceRecord.techIII}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, techIII: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        techIII: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -749,12 +1689,27 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Helper names"
                     value={maintenanceRecord.helpers}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, helpers: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        helpers: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
                 {/* ===== Inspection Sign-offs ===== */}
-                <h5 style={{ marginTop: 24, marginBottom: 16, fontSize: '15px', fontWeight: '600', color: '#1f2937' }}>Inspection Sign-offs</h5>
+                <h5
+                  style={{
+                    marginTop: 24,
+                    marginBottom: 16,
+                    fontSize: "15px",
+                    fontWeight: "600",
+                    color: "#1f2937",
+                  }}
+                >
+                  Inspection Sign-offs
+                </h5>
 
                 <div style={{ marginBottom: 12 }}>
                   <label>Inspected By</label>
@@ -762,7 +1717,12 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Inspector name"
                     value={maintenanceRecord.inspectedBy}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, inspectedBy: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        inspectedBy: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -772,7 +1732,12 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Date"
                     value={maintenanceRecord.inspectedByDate}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, inspectedByDate: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        inspectedByDate: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -782,7 +1747,12 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Reflected by name"
                     value={maintenanceRecord.reflectedBy}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, reflectedBy: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        reflectedBy: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -792,7 +1762,12 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Date"
                     value={maintenanceRecord.reflectedByDate}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, reflectedByDate: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        reflectedByDate: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -802,7 +1777,12 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Re-inspector name"
                     value={maintenanceRecord.reInspectedBy}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, reInspectedBy: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        reInspectedBy: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -812,7 +1792,12 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Date"
                     value={maintenanceRecord.reInspectedByDate}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, reInspectedByDate: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        reInspectedByDate: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -822,7 +1807,12 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="CSS name/value"
                     value={maintenanceRecord.css}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, css: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        css: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
@@ -832,17 +1822,39 @@ export default function InspectionDetailPage() {
                     type="text"
                     placeholder="Date"
                     value={maintenanceRecord.cssDate}
-                    onChange={(e) => setMaintenanceRecord({ ...maintenanceRecord, cssDate: e.target.value })}
+                    onChange={(e) =>
+                      setMaintenanceRecord({
+                        ...maintenanceRecord,
+                        cssDate: e.target.value,
+                      })
+                    }
                   />
                 </div>
 
-                <div style={{ display: 'flex', gap: 8, position: 'sticky', bottom: 0, backgroundColor: '#fff', paddingTop: 12, borderTop: '1px solid #e5e7eb' }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    position: "sticky",
+                    bottom: 0,
+                    backgroundColor: "#fff",
+                    paddingTop: 12,
+                    borderTop: "1px solid #e5e7eb",
+                  }}
+                >
                   <button
                     className="btn primary"
                     onClick={handleSaveEngineerInputs}
                     disabled={savingEngineer}
                   >
                     {savingEngineer ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={generatePDF}
+                    style={{ backgroundColor: "#10b981", color: "white" }}
+                  >
+                    Generate PDF
                   </button>
                   <button
                     className="btn"
@@ -854,131 +1866,168 @@ export default function InspectionDetailPage() {
               </div>
 
               {/* Right side - Thermal image with annotations */}
-              <div style={{ overflowY: 'auto', paddingRight: 12 }}>
-                <h4 style={{ marginTop: 0, marginBottom: 12 }}>Thermal Image</h4>
+              <div style={{ overflowY: "auto", paddingRight: 12 }}>
+                <h4 style={{ marginTop: 0, marginBottom: 12 }}>
+                  Thermal Image
+                </h4>
                 {thermal ? (
-                  <div style={{ position: 'relative', backgroundColor: '#000', borderRadius: '8px', overflow: 'hidden', display: 'inline-block', width: '100%' }}>
+                  <div
+                    style={{
+                      position: "relative",
+                      backgroundColor: "#000",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      display: "inline-block",
+                      width: "100%",
+                    }}
+                  >
                     <img
                       id="thermal-form-img"
                       src={thermal}
                       alt="Thermal"
                       style={{
-                        display: 'block',
-                        maxWidth: '100%',
-                        height: 'auto',
+                        display: "block",
+                        maxWidth: "100%",
+                        height: "auto",
                       }}
                     />
                     {/* Bounding boxes overlay */}
-                    {Array.isArray(thermalMeta?.boxes) && thermalMeta.boxes.length > 0 && (
-                      <div
+                    {Array.isArray(thermalMeta?.boxes) &&
+                      thermalMeta.boxes.length > 0 && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            pointerEvents: "none",
+                          }}
+                        >
+                          {thermalMeta.boxes.map((b: any, idx: number) => {
+                            const [x1, y1, x2, y2] = b.n;
+                            const left = `${Math.min(x1, x2) * 100}%`;
+                            const top = `${Math.min(y1, y2) * 100}%`;
+                            const width = `${Math.abs(x2 - x1) * 100}%`;
+                            const height = `${Math.abs(y2 - y1) * 100}%`;
+                            return (
+                              <div
+                                key={idx}
+                                style={{
+                                  position: "absolute",
+                                  left,
+                                  top,
+                                  width,
+                                  height,
+                                  border: `2px solid ${b.color || "#ff0000"}`,
+                                  boxSizing: "border-box",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    top: -22,
+                                    left: 0,
+                                    backgroundColor: b.color || "#ff0000",
+                                    color: "#fff",
+                                    padding: "2px 6px",
+                                    fontSize: "11px",
+                                    fontWeight: "bold",
+                                    borderRadius: "2px",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {b.klass || "Anomaly"}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      backgroundColor: "#f3f4f6",
+                      padding: "40px 20px",
+                      textAlign: "center",
+                      borderRadius: "8px",
+                      color: "#666",
+                      fontSize: "12px",
+                    }}
+                  >
+                    No thermal image available
+                  </div>
+                )}
+
+                {/* Anomaly Details Below Image */}
+                {Array.isArray(thermalMeta?.boxes) &&
+                  thermalMeta.boxes.length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <h5
                         style={{
-                          position: 'absolute',
-                          inset: 0,
-                          pointerEvents: 'none',
+                          marginTop: 0,
+                          marginBottom: 12,
+                          fontSize: "14px",
+                          fontWeight: "600",
                         }}
                       >
-                        {thermalMeta.boxes.map((b: any, idx: number) => {
-                          const [x1, y1, x2, y2] = b.n;
-                          const left = `${Math.min(x1, x2) * 100}%`;
-                          const top = `${Math.min(y1, y2) * 100}%`;
-                          const width = `${Math.abs(x2 - x1) * 100}%`;
-                          const height = `${Math.abs(y2 - y1) * 100}%`;
-                          return (
+                        Detected Anomalies
+                      </h5>
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {thermalMeta.boxes.map((b: any, idx: number) => (
+                          <div
+                            key={idx}
+                            style={{
+                              backgroundColor: "#f9fafb",
+                              border: `1px solid ${b.color || "#ff0000"}`,
+                              borderLeft: `4px solid ${b.color || "#ff0000"}`,
+                              padding: "12px",
+                              borderRadius: "6px",
+                              fontSize: "13px",
+                            }}
+                          >
                             <div
-                              key={idx}
                               style={{
-                                position: 'absolute',
-                                left,
-                                top,
-                                width,
-                                height,
-                                border: `2px solid ${b.color || '#ff0000'}`,
-                                boxSizing: 'border-box',
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                marginBottom: 6,
                               }}
                             >
                               <div
                                 style={{
-                                  position: 'absolute',
-                                  top: -22,
-                                  left: 0,
-                                  backgroundColor: b.color || '#ff0000',
-                                  color: '#fff',
-                                  padding: '2px 6px',
-                                  fontSize: '11px',
-                                  fontWeight: 'bold',
-                                  borderRadius: '2px',
-                                  whiteSpace: 'nowrap',
+                                  width: 12,
+                                  height: 12,
+                                  backgroundColor: b.color || "#ff0000",
+                                  borderRadius: "2px",
                                 }}
+                              />
+                              <span
+                                style={{ fontWeight: "600", color: "#1f2937" }}
                               >
-                                {b.klass || 'Anomaly'}
+                                {b.klass || "Anomaly"} #{idx + 1}
+                              </span>
+                            </div>
+                            {b.confidence && (
+                              <div style={{ marginBottom: 4, color: "#666" }}>
+                                <strong>Confidence:</strong>{" "}
+                                {(b.confidence * 100).toFixed(1)}%
                               </div>
+                            )}
+                            {b.details && (
+                              <div style={{ marginBottom: 4, color: "#666" }}>
+                                <strong>Details:</strong> {b.details}
+                              </div>
+                            )}
+                            <div style={{ color: "#666", fontSize: "12px" }}>
+                              <strong>Detection:</strong>{" "}
+                              {b.aiDetected !== false
+                                ? "AI Detected"
+                                : "Manually Selected"}
                             </div>
-                          );
-                        })}
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div style={{
-                    backgroundColor: '#f3f4f6',
-                    padding: '40px 20px',
-                    textAlign: 'center',
-                    borderRadius: '8px',
-                    color: '#666',
-                    fontSize: '12px',
-                  }}>
-                    No thermal image available
-                  </div>
-                )}
-                
-                {/* Anomaly Details Below Image */}
-                {Array.isArray(thermalMeta?.boxes) && thermalMeta.boxes.length > 0 && (
-                  <div style={{ marginTop: 16 }}>
-                    <h5 style={{ marginTop: 0, marginBottom: 12, fontSize: '14px', fontWeight: '600' }}>Detected Anomalies</h5>
-                    <div style={{ display: 'grid', gap: 8 }}>
-                      {thermalMeta.boxes.map((b: any, idx: number) => (
-                        <div
-                          key={idx}
-                          style={{
-                            backgroundColor: '#f9fafb',
-                            border: `1px solid ${b.color || '#ff0000'}`,
-                            borderLeft: `4px solid ${b.color || '#ff0000'}`,
-                            padding: '12px',
-                            borderRadius: '6px',
-                            fontSize: '13px',
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                            <div
-                              style={{
-                                width: 12,
-                                height: 12,
-                                backgroundColor: b.color || '#ff0000',
-                                borderRadius: '2px',
-                              }}
-                            />
-                            <span style={{ fontWeight: '600', color: '#1f2937' }}>
-                              {b.klass || 'Anomaly'} #{idx + 1}
-                            </span>
-                          </div>
-                          {b.confidence && (
-                            <div style={{ marginBottom: 4, color: '#666' }}>
-                              <strong>Confidence:</strong> {(b.confidence * 100).toFixed(1)}%
-                            </div>
-                          )}
-                          {b.details && (
-                            <div style={{ marginBottom: 4, color: '#666' }}>
-                              <strong>Details:</strong> {b.details}
-                            </div>
-                          )}
-                          <div style={{ color: '#666', fontSize: '12px' }}>
-                            <strong>Detection:</strong> {b.aiDetected !== false ? 'AI Detected' : 'Manually Selected'}
-                          </div>
-                        </div>
-                      ))}
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
           </div>
@@ -1075,7 +2124,9 @@ export default function InspectionDetailPage() {
                 onClick={() => handleSubmit("Thermal")}
                 disabled={submittingThermal}
               >
-                {submittingThermal ? "Uploading & Detecting" : "Submit Maintenance"}
+                {submittingThermal
+                  ? "Uploading & Detecting"
+                  : "Submit Maintenance"}
               </button>
               <button
                 className="btn"
@@ -1179,9 +2230,7 @@ export default function InspectionDetailPage() {
                       flexShrink: 0,
                     }}
                   ></div>
-                  <span style={{ color: "#475569", fontSize: 14 }}>
-                    {name}
-                  </span>
+                  <span style={{ color: "#475569", fontSize: 14 }}>{name}</span>
                 </div>
               ))}
           </div>
@@ -1390,7 +2439,14 @@ export default function InspectionDetailPage() {
           </button>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
-            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
               <label style={{ fontWeight: 600 }}>Error type:</label>
               <select
                 value={newAnomalyClass}
@@ -1658,7 +2714,8 @@ export default function InspectionDetailPage() {
             className="btn primary"
             onClick={() => {
               if (notes.trim()) {
-                const userName = username || localStorage.getItem("username") || "User";
+                const userName =
+                  username || localStorage.getItem("username") || "User";
                 setNotesList((prev) => [
                   ...prev,
                   {
