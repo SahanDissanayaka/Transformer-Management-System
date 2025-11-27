@@ -460,5 +460,141 @@ img.thumb {
 /* Dark mode - Labels in forms */
 :not([data-theme="light"]) label {
     color: var(--text) !important;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.3px;
+}
+
+/* Enhanced input styling for inspection form */
+:not([data-theme="light"]) input[type="text"]:not([disabled]),
+:not([data-theme="light"]) input[type="number"]:not([disabled]),
+:not([data-theme="light"]) input[type="email"]:not([disabled]),
+:not([data-theme="light"]) input[type="tel"]:not([disabled]),
+:not([data-theme="light"]) input[type="file"]:not([disabled]) {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.12) 0%, rgba(0, 212, 255, 0.08) 100%);
+    color: var(--text);
+    border: 2px solid rgba(0, 212, 255, 0.4);
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+:not([data-theme="light"]) input[type="text"]:focus:not([disabled]),
+:not([data-theme="light"]) input[type="number"]:focus:not([disabled]),
+:not([data-theme="light"]) input[type="email"]:focus:not([disabled]),
+:not([data-theme="light"]) input[type="tel"]:focus:not([disabled]),
+:not([data-theme="light"]) input[type="file"]:focus:not([disabled]) {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.18) 0%, rgba(0, 212, 255, 0.12) 100%);
+    border: 2px solid rgba(0, 212, 255, 0.7);
+    box-shadow: 0 0 16px rgba(0, 212, 255, 0.3), inset 0 2px 8px rgba(0, 212, 255, 0.1);
+}
+
+:not([data-theme="light"]) input[type="text"]::placeholder,
+:not([data-theme="light"]) input[type="number"]::placeholder,
+:not([data-theme="light"]) input[type="email"]::placeholder,
+:not([data-theme="light"]) input[type="tel"]::placeholder {
+    color: rgba(160, 160, 192, 0.6);
+}
+
+/* Enhanced disabled input styling */
+:not([data-theme="light"]) input[type="text"][disabled],
+:not([data-theme="light"]) input[type="number"][disabled],
+:not([data-theme="light"]) input[type="email"][disabled],
+:not([data-theme="light"]) input[type="tel"][disabled],
+:not([data-theme="light"]) input[type="file"][disabled] {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.08) 0%, rgba(0, 212, 255, 0.05) 100%);
+    color: var(--muted);
+    border: 2px solid rgba(0, 212, 255, 0.2);
+    font-style: italic;
+    opacity: 0.85;
+}
+
+/* Enhanced select styling */
+:not([data-theme="light"]) select {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.12) 0%, rgba(0, 212, 255, 0.08) 100%);
+    color: var(--text);
+    border: 2px solid rgba(0, 212, 255, 0.4);
+    font-size: 15px;
+    font-weight: 500;
+}
+
+:not([data-theme="light"]) select:focus {
+    border: 2px solid rgba(0, 212, 255, 0.7);
+    box-shadow: 0 0 16px rgba(0, 212, 255, 0.3);
+}
+
+/* Enhanced textarea styling */
+:not([data-theme="light"]) textarea {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.12) 0%, rgba(0, 212, 255, 0.08) 100%);
+    color: var(--text);
+    border: 2px solid rgba(0, 212, 255, 0.4);
+    font-size: 15px;
+    font-weight: 500;
+}
+
+:not([data-theme="light"]) textarea:focus {
+    border: 2px solid rgba(0, 212, 255, 0.7);
+    box-shadow: 0 0 16px rgba(0, 212, 255, 0.3);
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.18) 0%, rgba(0, 212, 255, 0.12) 100%);
+}
+
+:not([data-theme="light"]) textarea::placeholder {
+    color: rgba(160, 160, 192, 0.6);
+}
+
+/* Scrollbar styling for dark mode */
+/* Firefox */
+:not([data-theme="light"]) {
+    scrollbar-color: rgba(0, 212, 255, 0.4) transparent;
+    scrollbar-width: thin;
+}
+
+/* Chrome, Edge, Safari */
+:not([data-theme="light"]) ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+:not([data-theme="light"]) ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+:not([data-theme="light"]) ::-webkit-scrollbar-thumb {
+    background: rgba(0, 212, 255, 0.4);
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+:not([data-theme="light"]) ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 212, 255, 0.6);
+    background-clip: padding-box;
+}
+
+/* Light mode scrollbar */
+[data-theme="light"] {
+    scrollbar-color: rgba(14, 165, 233, 0.4) transparent;
+    scrollbar-width: thin;
+}
+
+[data-theme="light"] ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: rgba(14, 165, 233, 0.4);
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+    background: rgba(14, 165, 233, 0.6);
+    background-clip: padding-box;
 }
 

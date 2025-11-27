@@ -48,7 +48,7 @@ const Login: React.FC = () => {
           console.log("Auth state set, redirecting...");
           // Delay to ensure localStorage is written
           setTimeout(() => {
-            window.location.href = "/transformers";
+            window.location.href = "/";
           }, 100);
         } else {
           console.log("Login failed:", response.responseDescription);
