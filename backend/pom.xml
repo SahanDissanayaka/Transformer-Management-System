@@ -24,6 +24,9 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <!-- Default fallback; overridden by profile/local or CLI/env -->
     <python.exec></python.exec>
+    <!-- Python executable paths for venv setup -->
+    <pip.executable>${project.basedir}/python/.venv/Scripts/pip</pip.executable>
+    <venv.skip>false</venv.skip>
     <!-- Needed for the compiler plugin's annotationProcessorPaths -->
     <lombok.version>1.18.34</lombok.version>
   </properties>
@@ -61,6 +64,49 @@
 
   <build>
     <plugins>
+      <!-- Setup Python Virtual Environment -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <!-- Create .venv if it doesn't exist -->
+          <execution>
+            <id>create-venv</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>python</executable>
+              <arguments>
+                <argument>-m</argument>
+                <argument>venv</argument>
+                <argument>${project.basedir}/python/.venv</argument>
+              </arguments>
+              <skip>${venv.skip}</skip>
+            </configuration>
+          </execution>
+          <!-- Install requirements -->
+          <execution>
+            <id>install-requirements</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>${pip.executable}</executable>
+              <arguments>
+                <argument>install</argument>
+                <argument>-r</argument>
+                <argument>${project.basedir}/python/requirements.txt</argument>
+              </arguments>
+              <skip>${venv.skip}</skip>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <!-- Compile with Java 17 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -110,12 +156,14 @@
       <properties>
         <!-- Use conda environment python - falls back to env var if not set via -D -->
         <python.exec>${env.PYTHON_EXEC}</python.exec>
+        <!-- Windows pip path -->
+        <pip.executable>${project.basedir}/python/.venv/Scripts/pip</pip.executable>
         <!-- Activates Spring's 'local' profile when launched via mvn -->
         <spring-boot.run.profiles>local</spring-boot.run.profiles>
       </properties>
     </profile>
 
-    <!-- Optional: Linux/macOS (WSL/CI) -->
+    <!-- Linux/macOS (WSL/CI) -->
     <profile>
       <id>unix</id>
       <activation>
@@ -125,6 +173,8 @@
       </activation>
       <properties>
         <python.exec>${project.basedir}/python/.venv/bin/python</python.exec>
+        <!-- Unix pip path -->
+        <pip.executable>${project.basedir}/python/.venv/bin/pip</pip.executable>
         <spring-boot.run.profiles>local</spring-boot.run.profiles>
       </properties>
     </profile>
