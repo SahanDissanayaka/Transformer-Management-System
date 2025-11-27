@@ -23,8 +23,8 @@ const Login: React.FC = () => {
 
     try {
       if (isRegisterMode) {
-        // Register new user
-        const response = await authApi.register({ username, password });
+        // Register new user with role
+        const response = await authApi.register({ username, password, role });
         if (response.responseCode == 2000) {
           setSuccess("Account created successfully! Please login.");
           setIsRegisterMode(false);
@@ -41,11 +41,11 @@ const Login: React.FC = () => {
         console.log("Login response:", response);
 
         if (response.responseCode == 2000) {
-          // Successful login - set auth state
+          // Successful login - use role from database
           console.log("Login successful, setting auth state");
-          // include role selection for authorization
-          login(username, role);
-          console.log("Auth state set, redirecting...");
+          const userRole = response.responseData?.role || "viewer";
+          login(username, userRole);
+          console.log("Auth state set with role:", userRole);
           // Delay to ensure localStorage is written
           setTimeout(() => {
             window.location.href = "/transformers";
@@ -74,31 +74,45 @@ const Login: React.FC = () => {
       <div className="login-container">
         <div className="login-wrapper">
           <div className="login-description">
-            <h1 className="description-title">Transformer Thermal Inspection System</h1>
+            <h1 className="description-title">
+              Transformer Thermal Inspection System
+            </h1>
             <p className="description-subtitle">
-              Advanced thermal imaging and anomaly detection system for power transformer monitoring and maintenance.
+              Advanced thermal imaging and anomaly detection system for power
+              transformer monitoring and maintenance.
             </p>
-            
+
             <div className="features-list">
               <div className="feature-item">
                 <div className="feature-icon">📷</div>
-                <div className="feature-text">Real-time thermal image analysis with AI-powered anomaly detection</div>
+                <div className="feature-text">
+                  Real-time thermal image analysis with AI-powered anomaly
+                  detection
+                </div>
               </div>
               <div className="feature-item">
                 <div className="feature-icon">⚡</div>
-                <div className="feature-text">Instant temperature monitoring and hotspot identification</div>
+                <div className="feature-text">
+                  Instant temperature monitoring and hotspot identification
+                </div>
               </div>
               <div className="feature-item">
                 <div className="feature-icon">📊</div>
-                <div className="feature-text">Comprehensive inspection reports and historical data tracking</div>
+                <div className="feature-text">
+                  Comprehensive inspection reports and historical data tracking
+                </div>
               </div>
               <div className="feature-item">
                 <div className="feature-icon">🔒</div>
-                <div className="feature-text">Secure role-based access control and data management</div>
+                <div className="feature-text">
+                  Secure role-based access control and data management
+                </div>
               </div>
               <div className="feature-item">
                 <div className="feature-icon">📈</div>
-                <div className="feature-text">Predictive maintenance insights and trend analysis</div>
+                <div className="feature-text">
+                  Predictive maintenance insights and trend analysis
+                </div>
               </div>
             </div>
           </div>
@@ -107,7 +121,9 @@ const Login: React.FC = () => {
             <h1 className="login-title">
               {isRegisterMode ? "Create Account" : "Login"}
             </h1>
-            <p className="login-subtitle">Enter your credentials to get started</p>
+            <p className="login-subtitle">
+              Enter your credentials to get started
+            </p>
 
             {error && <div className="alert alert-error">{error}</div>}
             {success && <div className="alert alert-success">{success}</div>}
@@ -139,20 +155,26 @@ const Login: React.FC = () => {
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="role">Role</label>
-                <select
-                  id="role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  disabled={isLoading}
-                >
-                  <option value="viewer">Viewer</option>
-                  <option value="engineer">Engineer</option>
-                </select>
-              </div>
+              {isRegisterMode && (
+                <div className="form-group">
+                  <label htmlFor="role">Role</label>
+                  <select
+                    id="role"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    disabled={isLoading}
+                  >
+                    <option value="viewer">Viewer</option>
+                    <option value="engineer">Engineer</option>
+                  </select>
+                </div>
+              )}
 
-              <button type="submit" className="btn-primary" disabled={isLoading}>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={isLoading}
+              >
                 {isLoading
                   ? "Please wait..."
                   : isRegisterMode
