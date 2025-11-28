@@ -44,6 +44,7 @@ export default function InspectionDetailPage() {
   const [thermal, setThermal] = useState<string | null>(null);
   const [thermalMeta, setThermalMeta] = useState<ThermalMeta>({});
   const [removedAnomalies, setRemovedAnomalies] = useState<Box[]>([]);
+  const [originalAnomalies, setOriginalAnomalies] = useState<AnomalyResponse[]>([]);
 
   // UI State
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -892,11 +893,39 @@ export default function InspectionDetailPage() {
     try {
       const response = await loadFeedbackLogsAPI(transformerNo!, inspectionNo!);
       if (response?.responseCode === "2000" && response.responseData?.logs) {
-        const logs =
+        const logsRaw =
           typeof response.responseData.logs === "string"
             ? JSON.parse(response.responseData.logs)
             : response.responseData.logs;
-        setFeedbackLog(Array.isArray(logs) ? logs : [logs]);
+        const logs = Array.isArray(logsRaw) ? logsRaw : [logsRaw];
+        setFeedbackLog(logs);
+
+        // Derive removed anomalies from delete-type feedback logs so they persist
+        const deletedLogs = logs.filter(
+          (l: any) => l?.originalAIDetection && l?.userModification?.action === "deleted"
+        );
+        const countsByClass: Record<string, number> = {};
+        const removedFromLogs: Box[] = [];
+        for (const l of deletedLogs) {
+          const orig = l.originalAIDetection;
+          const userMod = l.userModification;
+          const coords = Array.isArray(orig.box) ? orig.box : [0, 0, 0, 0];
+          const color = CLASS_COLORS[orig.class] || CLASS_COLORS.default;
+          countsByClass[orig.class] = (countsByClass[orig.class] || 0) + 1;
+          const idxForClass = countsByClass[orig.class];
+          removedFromLogs.push({
+            n: [coords[0], coords[1], coords[2], coords[3]],
+            color,
+            idx: idxForClass,
+            klass: orig.class,
+            conf: orig.confidence ?? 0,
+            aiDetected: true,
+            rejectedBy: userMod.modifiedBy,
+            rejectedAt: userMod.modifiedAt,
+          } as Box);
+        }
+
+        if (removedFromLogs.length > 0) setRemovedAnomalies(removedFromLogs);
       }
     } catch (error) {
       console.error("Error loading feedback logs:", error);
@@ -918,6 +947,7 @@ export default function InspectionDetailPage() {
             setThermal(src);
             const anomalies: AnomalyResponse[] =
               r.responseData?.anomaliesResponse?.anomalies || [];
+            setOriginalAnomalies(anomalies);
 
             if (typeof r.responseData?.anomaliesResponse !== "undefined") {
               setDetectionRan(true);
@@ -997,6 +1027,7 @@ export default function InspectionDetailPage() {
         setThermal(src);
         const anomalies: AnomalyResponse[] =
           view.responseData?.anomaliesResponse?.anomalies || [];
+        setOriginalAnomalies(anomalies);
         setErrorMsg(null);
         setDetectionRan(true);
 
@@ -3377,15 +3408,62 @@ export default function InspectionDetailPage() {
           {feedbackLog.length > 0 && (
             <button
               onClick={() => {
+                const exportedBy =
+                  localStorage.getItem("userName") || localStorage.getItem("username") || "User";
+                const imageId = `${transformerNo}_${inspectionNo}`;
+
+                const modelPredictedAnomalies = (originalAnomalies || []).map(
+                  (a) => ({
+                    box: a.box.map((v) => parseFloat(v.toFixed(6))),
+                    class: a.class,
+                    confidence: a.confidence ?? a.conf ?? null,
+                  })
+                );
+
+                const finalAcceptedAnnotations = (thermalMeta.boxes || []).map(
+                  (b) => ({
+                    box: b.n.map((v) => parseFloat(v.toFixed(6))),
+                    class: b.klass,
+                    manual: b.aiDetected === false,
+                    annotator: (() => {
+                      if (b.aiDetected) return null;
+                      // prefer explicit rejectedBy (modifier); otherwise try to find a matching userAddition in feedback logs
+                      if (b.rejectedBy) return b.rejectedBy;
+                      const coordsKey = JSON.stringify(b.n.map((v) => parseFloat(v.toFixed(6))));
+                      const addition = (feedbackLog || []).find((f: any) => f.userAddition && JSON.stringify(f.userAddition.box.map((v: number) => parseFloat(v.toFixed(6)))) === coordsKey);
+                      return addition ? (addition as any).userAddition.addedBy : null;
+                    })(),
+                  })
+                );
+
+                const feedbackLogs = feedbackLog || [];
+
+                const removed = (feedbackLog || [])
+                  .filter(
+                    (l: any) =>
+                      (l as any).originalAIDetection &&
+                      (l as any).userModification &&
+                      (l as any).userModification.action === "deleted"
+                  )
+                  .map((l: any) => ({
+                    box: (l as any).originalAIDetection.box,
+                    class: (l as any).originalAIDetection.class,
+                    source: "AI",
+                    removedBy: (l as any).userModification.modifiedBy,
+                    removedAt: (l as any).userModification.modifiedAt,
+                    feedbackLog: l,
+                  }));
+
                 const feedbackData = {
-                  exportedAt: new Date().toLocaleString("en-US", {
-                    timeZone: "Asia/Colombo",
-                  }),
-                  imageData: {
-                    transformerNo,
-                    inspectionNo,
-                  },
-                  feedback: feedbackLog,
+                  imageId,
+                  transformerNo,
+                  inspectionNo,
+                  exportedAt: new Date().toISOString(),
+                  exportedBy,
+                  modelPredictedAnomalies,
+                  finalAcceptedAnnotations,
+                  feedbackLogs,
+                  removedAnomalies: removed,
                 };
                 const formattedJson = JSON.stringify(feedbackData, null, 2);
                 const blob = new Blob([formattedJson], {
@@ -3474,22 +3552,70 @@ export default function InspectionDetailPage() {
               }
             }}
             onReject={(anomalyIdx) => {
-              const userName = localStorage.getItem("userName") || "User";
-              const rejectedBox = thermalMeta.boxes?.find(
-                (b) => b.idx === anomalyIdx
-              );
-              if (rejectedBox) {
+              (async () => {
+                const userName =
+                  localStorage.getItem("userName") || localStorage.getItem("username") || "User";
+                const rejectedBox = thermalMeta.boxes?.find((b) => b.idx === anomalyIdx);
+                if (!rejectedBox) return;
+
+                // Optimistically update UI
                 const updatedBox = {
                   ...rejectedBox,
                   rejectedBy: userName,
                   rejectedAt: new Date().toLocaleString(),
                 };
-                setRemovedAnomalies((prev) => [...prev, updatedBox]);
                 setThermalMeta((prev) => ({
                   ...prev,
                   boxes: prev.boxes?.filter((b) => b.idx !== anomalyIdx),
                 }));
-              }
+
+                try {
+                  // Persist the removal via the existing API (deleteAnomaly)
+                  const logData = await deleteAnomaly(
+                    transformerNo!,
+                    inspectionNo!,
+                    rejectedBox,
+                    thermalMeta.boxes?.filter((b) => b.idx !== anomalyIdx) || []
+                  );
+
+                  if (logData) {
+                    setFeedbackLog((prev) => [...prev, logData]);
+
+                    const orig = (logData as any).originalAIDetection;
+                    const coords = Array.isArray(orig.box) ? orig.box : [0, 0, 0, 0];
+                    const color = CLASS_COLORS[orig.class] || CLASS_COLORS.default;
+                    const removedBoxBase = {
+                      n: [coords[0], coords[1], coords[2], coords[3]],
+                      color,
+                      klass: orig.class,
+                      conf: orig.confidence ?? 0,
+                      aiDetected: true,
+                      rejectedBy: (logData as any).userModification?.modifiedBy || userName,
+                      rejectedAt: (logData as any).userModification?.modifiedAt || new Date().toLocaleString(),
+                    } as Omit<Box, "idx">;
+                    setRemovedAnomalies((prev) => {
+                      const count = prev.filter((r) => r.klass === orig.class).length;
+                      const idxForClass = count + 1;
+                      return [...prev, { ...removedBoxBase, idx: idxForClass } as Box];
+                    });
+                  } else {
+                    // fallback: keep the optimistic removed box but assign per-class idx
+                    setRemovedAnomalies((prev) => {
+                      const count = prev.filter((r) => r.klass === updatedBox.klass).length;
+                      const idxForClass = count + 1;
+                      return [...prev, { ...updatedBox, idx: idxForClass } as Box];
+                    });
+                  }
+                } catch (err) {
+                  console.error(err);
+                  // revert UI on failure
+                  setThermalMeta((prev) => ({
+                    ...prev,
+                    boxes: [...(prev.boxes ?? []), rejectedBox],
+                  }));
+                  alert("Error removing anomaly");
+                }
+              })();
             }}
             onDelete={async (anomalyIdx) => {
               const boxToDelete = thermalMeta.boxes?.find(
@@ -3512,6 +3638,26 @@ export default function InspectionDetailPage() {
 
                 if (logData) {
                   setFeedbackLog((prev) => [...prev, logData]);
+                  // also add to removedAnomalies so it persists on reload
+                  const orig = (logData as any).originalAIDetection;
+                  if (orig) {
+                    const coords = Array.isArray(orig.box) ? orig.box : [0, 0, 0, 0];
+                    const color = CLASS_COLORS[orig.class] || CLASS_COLORS.default;
+                    const removedBoxBase = {
+                      n: [coords[0], coords[1], coords[2], coords[3]],
+                      color,
+                      klass: orig.class,
+                      conf: orig.confidence ?? 0,
+                      aiDetected: true,
+                      rejectedBy: (logData as any).userModification?.modifiedBy || undefined,
+                      rejectedAt: (logData as any).userModification?.modifiedAt || undefined,
+                    } as Omit<Box, "idx">;
+                    setRemovedAnomalies((prev) => {
+                      const count = prev.filter((r) => r.klass === orig.class).length;
+                      const idxForClass = count + 1;
+                      return [...prev, { ...removedBoxBase, idx: idxForClass } as Box];
+                    });
+                  }
                 }
               } catch (err) {
                 console.error(err);
