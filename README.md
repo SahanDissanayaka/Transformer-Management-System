@@ -128,9 +128,12 @@ To run the YOLO model for anomaly detection:
   ```
 - Default port is `5432`.
 
----
+   ---
 
-## Implemented Features
+   **Detection Approach (Overview)**
+   - The project uses a Python YOLO runner (bundled under `backend/model/` and `backend/python/`) invoked by the backend service to produce anomaly bounding boxes.
+   - The backend saves the raw detection results in `detectionJson` (stored in the DB) and returns the list to the frontend for rendering.
+   - When a user modifies or deletes an AI detection, the original detection is saved inside `logs` as `originalAIDetection` with a `userModification` entry to preserve provenance.
 
 - Transformer data management (CRUD operations)
 - Inspection data entry and display
@@ -140,9 +143,13 @@ To run the YOLO model for anomaly detection:
 - REST API integration between frontend and backend
 - Database support (PostgreSQL)
 
----
+   **Annotation System (how it works)**
+   - **UI actions:** Annotators can approve, edit, add, or reject detections.
+   - **Persistence path:** Frontend calls `detectionApi.updateAnomalies` which sends `detectionJson` (current anomaly list) and `logs` (a JSON entry or array) via `PUT /transformer-thermal-inspection/image-data/update`.
+   - **Log shape:** A `FeedbackLog` entry is either a `userAddition` or an `originalAIDetection` + `userModification` object. These are appended to the persisted `logs` field for the image.
+   - **Removed Anomalies:** Deleted/ rejected AI detections are stored as deletion logs; the frontend reconstructs the `Removed Anomalies` list from those persisted logs on every load.
 
-## Known Limitations / Issues
+   ---
 
 - Basic error handling for API/network requests
 - Database connection settings must be configured in `backend/src/main/resources/application.yaml`
@@ -150,10 +157,61 @@ To run the YOLO model for anomaly detection:
 - UI styling and accessibility improvements needed
 - No automated tests included yet
 
----
+   ---
 
-## Additional Notes
+   **Form generation & saving mechanism (inspection form)**
+   - The inspection/maintenance form is a React form in `InspectionDetailPage.tsx`.
+   - When saved, the page calls `inspectionDataApi.updateInspection(...)` which sends form fields to the backend `InspectionDataController` to update the `InspectionDataEntity`.
+   - The backend mapper formats date/time and updates only provided fields.
 
-- Frontend uses ESLint for code linting (`frontend/eslint.config.js`)
-- Backend documentation available in `backend/HELP.md`
-- Ensure backend API endpoints match frontend
+   ---
+
+   **Database schema (record storage overview)**
+   - `image_data` table (represented by `ImageDataEntity`):
+     - `id` (PK)
+     - `transformer_no` (string)
+     - `inspection_no` (string)
+     - `type` (Thermal/Baseline)
+     - `image` (blob)
+     - `detection_json` (text) — JSON array of anomalies
+     - `logs` (text) — JSON string or array of `FeedbackLog` entries
+     - `date_time` (timestamp)
+
+   - `inspection_data` table (represented by `InspectionDataEntity`): fields for inspector name, status, voltages, maintenance details, etc. (see `backend/src/main/java/.../entity/InspectionDataEntity.java`).
+
+   Note: exact column names and types are defined by JPA entities in `backend/src/main/java/.../entity`.
+
+   ---
+
+   **Dependencies**
+   - Frontend: Node, npm, React, Vite, TypeScript, Axios.
+   - Backend: Java 17+, Spring Boot, Spring Data JPA, Jackson.
+
+   ---
+
+   **Known Bugs & Limitations**
+   - Frontend-only state (previously) allowed `Removed Anomalies` to disappear after navigation; recent changes now persist deletions to `logs` and reconstruct them on load. If you still see this, verify `responseData.logs` from the backend contains deletion entries.
+   - PowerShell execution policy may block `npm` script execution on Windows; use `cmd.exe` or adjust policy.
+   - No role-based auth is enforced — anyone who can reach the UI/API can modify annotations.
+   - Some TypeScript `// @ts-nocheck` pragmas are present in a few files (temporary pragmatic fixes). Cleaning these is a follow-up task.
+   - CSV export omits some nested provenance details by design; extend `exportFeedback.ts` if you need more columns.
+
+   ---
+
+   **How to verify persisted removed anomalies (debug steps)**
+   1. Reject/delete an anomaly in the UI.
+   2. Use the view API to inspect `logs`:
+   ```cmd
+   curl "http://localhost:8080/transformer-thermal-inspection/image-data/view?transformerNo=<NO>&inspectionNo=<ID>&type=Thermal"
+   ```
+   3. Confirm `responseData.logs` contains entries with `userModification.action == "deleted"`.
+
+   ---
+
+   If you'd like, I can:
+   - Add CSV rows for `removedAnomalies` in `frontend/src/utils/exportFeedback.ts`.
+   - Add temporary debug prints for the `update` call payload to help trace any missing saves.
+   - Prepare a short developer checklist for deployment.
+
+   Contact / Next steps
+   - If you want the README trimmed or expanded with diagrams or a quick start script, tell me which format you prefer and I will add it.
