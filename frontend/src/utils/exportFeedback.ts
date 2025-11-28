@@ -63,113 +63,7 @@ export function buildExportPayload(
       (exportedBy ? exportedBy : localStorage.getItem("username") || (b.userAdded ? "User" : null)),
   }));
 
-  // Build a unified list of actions (model detection, user additions, modifications, deletions)
-  const actions: Array<any> = [];
-
-  // 1) From feedbackLogs: convert each log into one or more actions
-  (feedbackLogs || []).forEach((lg: any) => {
-    if (lg.originalAIDetection) {
-      // model detection action (original)
-      actions.push({
-        actionType: "model_detection",
-        actor: "AI",
-        at: null,
-        details: {
-          box: lg.originalAIDetection.box,
-          class: lg.originalAIDetection.class,
-          confidence: lg.originalAIDetection.confidence,
-        },
-        relatedLog: lg,
-      });
-
-      if (lg.userModification) {
-        actions.push({
-          actionType: lg.userModification.action === "deleted" ? "user_deletion" : "user_modification",
-          actor: lg.userModification.modifiedBy || null,
-          at: lg.userModification.modifiedAt || null,
-          details: {
-            before: lg.originalAIDetection.box,
-            after: lg.userModification.finalBox || null,
-            finalClass: lg.userModification.finalClass || null,
-          },
-          relatedLog: lg,
-        });
-      }
-    } else if (lg.userAddition) {
-      actions.push({
-        actionType: "user_addition",
-        actor: lg.userAddition.addedBy || null,
-        at: lg.userAddition.addedAt || null,
-        details: {
-          box: lg.userAddition.box,
-          class: lg.userAddition.class,
-        },
-        relatedLog: lg,
-      });
-    }
-  });
-
-  // 2) From finalBoxes: include any model detections not represented in logs
-  (finalBoxes || []).forEach((b) => {
-    if (b.aiDetected) {
-      const matched = (feedbackLogs || []).some((lg: any) =>
-        lg.originalAIDetection && Array.isArray(lg.originalAIDetection.box)
-          ? JSON.stringify(lg.originalAIDetection.box) === JSON.stringify(b.n)
-          : false
-      );
-      if (!matched) {
-        actions.push({
-          actionType: "model_detection",
-          actor: "AI",
-          at: null,
-          details: { box: b.n, class: b.klass, confidence: b.conf },
-          relatedLog: null,
-        });
-      }
-    } else if (b.userAdded) {
-      // user added box not in logs — include as user_addition
-      const matched = (feedbackLogs || []).some((lg: any) =>
-        lg.userAddition && Array.isArray(lg.userAddition.box)
-          ? JSON.stringify(lg.userAddition.box) === JSON.stringify(b.n)
-          : false
-      );
-      if (!matched) {
-        actions.push({
-          actionType: "user_addition",
-          actor: b.rejectedBy || localStorage.getItem("username") || null,
-          at: b.rejectedAt || null,
-          details: { box: b.n, class: b.klass },
-          relatedLog: null,
-        });
-      }
-    }
-  });
-
-  // 3) From removedBoxes: if there's no matching deletion log, add user_deletion
-  (removedBoxes || []).forEach((b) => {
-    const matchedDeletion = (feedbackLogs || []).some((lg: any) =>
-      lg.originalAIDetection && lg.userModification && lg.userModification.action === "deleted"
-        ? JSON.stringify(lg.originalAIDetection.box) === JSON.stringify(b.n)
-        : lg.userAddition && lg.userModification && lg.userModification.action === "deleted"
-        ? JSON.stringify(lg.userAddition.box) === JSON.stringify(b.n)
-        : false
-    );
-    if (!matchedDeletion) {
-      actions.push({
-        actionType: "user_deletion",
-        actor: b.rejectedBy || localStorage.getItem("username") || null,
-        at: b.rejectedAt || null,
-        details: { box: b.n, class: b.klass },
-        relatedLog: null,
-      });
-    }
-  });
-
-  // Normalize action timestamps/actors (ensure strings or null)
-  actions.forEach((a) => {
-    if (a.at === undefined) a.at = null;
-    if (a.actor === undefined) a.actor = null;
-  });
+  // actions array removed: exporter will rely on canonical feedbackLogs
 
   return {
     imageId,
@@ -201,7 +95,7 @@ export function buildExportPayload(
         feedbackLog: matchingLog || null,
       };
     }),
-    actions,
+    // actions intentionally omitted from export
   };
 }
 
@@ -237,11 +131,6 @@ export function downloadCsv(payload: any, filename = "feedback_log.csv") {
     "inspectionNo",
     "exportedAt",
     "exportedBy",
-    "action_type",
-    "actor",
-    "actor_time",
-    "action_box_before",
-    "action_box_after",
     "recordType",
     "model_box",
     "model_class",
@@ -280,11 +169,6 @@ export function downloadCsv(payload: any, filename = "feedback_log.csv") {
       payload.inspectionNo || "",
       payload.exportedAt || "",
       payload.exportedBy || "",
-      "model_detection",
-      "AI",
-      "",
-      safeString(m.box),
-      "",
       "model_prediction",
       safeString(m.box),
       safeString(m.class),
@@ -314,14 +198,14 @@ export function downloadCsv(payload: any, filename = "feedback_log.csv") {
       payload.inspectionNo || "",
       payload.exportedAt || "",
       payload.exportedBy || "",
-      "user_addition",
-      safeString(f.annotator || ""),
-      safeString(f.manual ? "" : ""),
+      "final_annotation",
+      "",
+      "",
       "",
       safeString(f.box),
       safeString(f.class),
       safeString(f.manual),
-      related ? safeString(related.userAddition.addedBy) : "",
+      related ? safeString(related.userAddition.addedBy) : safeString(f.annotator || ""),
       related ? safeString(related.userAddition.addedAt) : "",
       related ? "user_addition" : "",
       related ? safeString(related) : "",
@@ -339,26 +223,24 @@ export function downloadCsv(payload: any, filename = "feedback_log.csv") {
       : false;
     if (alreadyCovered) return;
 
+    // Build a row from the canonical feedback log entry
+    const recordType = lg.userModification?.action === "deleted"
+      ? "user_deletion"
+      : lg.userModification
+      ? "user_modification"
+      : lg.userAddition
+      ? "user_addition"
+      : lg.originalAIDetection
+      ? "model_detection"
+      : "feedback_log";
+
     rows.push([
       imageId,
       payload.transformerNo || "",
       payload.inspectionNo || "",
       payload.exportedAt || "",
       payload.exportedBy || "",
-      lg.userModification?.action === "deleted"
-        ? "user_deletion"
-        : lg.userModification
-        ? "user_modification"
-        : lg.userAddition
-        ? "user_addition"
-        : lg.originalAIDetection
-        ? "model_detection"
-        : "feedback_log",
-      safeString(lg.userModification?.modifiedBy || lg.userAddition?.addedBy || ""),
-      safeString(lg.userModification?.modifiedAt || lg.userAddition?.addedAt || ""),
-      safeString(lg.originalAIDetection?.box || lg.userAddition?.box || ""),
-      safeString(lg.userModification?.finalBox || ""),
-      "",
+      recordType,
       safeString(lg.originalAIDetection?.box),
       safeString(lg.originalAIDetection?.class),
       safeString(lg.originalAIDetection?.confidence),
@@ -367,36 +249,11 @@ export function downloadCsv(payload: any, filename = "feedback_log.csv") {
       safeString(lg.userModification ? true : lg.userAddition ? true : ""),
       safeString(lg.userModification?.modifiedBy || lg.userAddition?.addedBy),
       safeString(lg.userModification?.modifiedAt || lg.userAddition?.addedAt),
-      "",
+      recordType,
       safeString(lg),
     ]);
   });
-
-  // Also include actions array rows if present
-  (payload.actions || []).forEach((a: any) => {
-    rows.push([
-      imageId,
-      payload.transformerNo || "",
-      payload.inspectionNo || "",
-      payload.exportedAt || "",
-      payload.exportedBy || "",
-      safeString(a.actionType || ""),
-      safeString(a.actor || ""),
-      safeString(a.at || ""),
-      safeString(a.details?.before || a.details?.box || ""),
-      safeString(a.details?.after || a.details?.finalBox || ""),
-      "action",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      safeString(a.relatedLog || ""),
-    ]);
-  });
+  // actions are intentionally not exported in CSV; canonical feedbackLogs are used instead
 
   // Convert to CSV string (simple escaping for quotes)
   const csvContent = rows
