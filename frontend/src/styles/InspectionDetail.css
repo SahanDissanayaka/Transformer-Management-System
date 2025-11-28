@@ -1,0 +1,148 @@
+.upload-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.upload-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, rgba(0,212,255,0.12), rgba(0,212,255,0.04));
+  border: 1px solid rgba(0,212,255,0.35);
+  border-radius: 14px;
+  position: relative;
+  box-shadow: 0 4px 12px -2px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.08);
+  transition: box-shadow .3s ease, transform .25s ease, border-color .3s;
+  backdrop-filter: blur(6px);
+}
+.upload-card:hover {
+  box-shadow: 0 6px 18px -3px rgba(0,0,0,0.25), 0 3px 8px rgba(0,0,0,0.15);
+  transform: translateY(-3px);
+  border-color: rgba(0,212,255,0.55);
+}
+.upload-card h4 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: .5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+.upload-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  opacity: .65;
+  letter-spacing: .05em;
+}
+.file-input-wrapper {
+  border: 2px dashed rgba(0,212,255,0.4);
+  border-radius: 10px;
+  padding: 18px 16px;
+  background: rgba(0,212,255,0.06);
+  cursor: pointer;
+  position: relative;
+  transition: background .25s, border-color .25s;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  text-align: center;
+}
+.file-input-wrapper:hover {
+  background: rgba(0,212,255,0.12);
+  border-color: rgba(0,212,255,0.7);
+}
+.file-input-wrapper.drag-active {
+  background: rgba(0,212,255,0.22);
+  border-color: rgba(0,212,255,0.85);
+  box-shadow: 0 0 0 3px rgba(0,212,255,0.35);
+}
+.file-input-wrapper input[type=file] {
+  display: none;
+}
+.file-hint {
+  font-size: 12px;
+  opacity: .7;
+}
+.selected-file {
+  font-size: 12px;
+  background: rgba(0,212,255,0.15);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(0,212,255,0.3);
+  word-break: break-all;
+}
+.action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.button-primary-outline {
+  background: rgba(0,212,255,0.18);
+  color: var(--text);
+  font-weight: 600;
+  border: 1px solid rgba(0,212,255,0.5);
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background .25s, box-shadow .25s;
+}
+.button-primary-outline:hover {
+  background: rgba(0,212,255,0.28);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+.weather-select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,212,255,0.35);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color .25s, background .25s;
+}
+.weather-select:focus {
+  border-color: rgba(0,212,255,0.7);
+  background: rgba(0,212,255,0.08);
+}
+.mode-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  background: linear-gradient(90deg,#00d4ff,#36a6ff);
+  color: #fff;
+  border-radius: 20px;
+  letter-spacing: .05em;
+}
+/* Dark mode support - rely on body.dark or data-theme */
+body.dark .upload-card {
+  background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(0,212,255,0.03));
+  border-color: rgba(0,212,255,0.25);
+}
+body.dark .file-input-wrapper {
+  background: rgba(0,212,255,0.04);
+}
+body.dark .file-input-wrapper:hover {
+  background: rgba(0,212,255,0.1);
+}
+body.dark .file-input-wrapper.drag-active {
+  background: rgba(0,212,255,0.18);
+  border-color: rgba(0,212,255,0.55);
+  box-shadow: 0 0 0 3px rgba(0,212,255,0.25);
+}
+body.dark .selected-file {
+  background: rgba(0,212,255,0.12);
+  border-color: rgba(0,212,255,0.25);
+}
+@media (max-width: 920px) {
+  .upload-section {
+    grid-template-columns: 1fr;
+  }
+}
