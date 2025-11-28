@@ -1,41 +1,56 @@
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\service\util\DataSpecificationUtil.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\entity\ImageDataEntity.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\transport\request\InspectionDataRequest.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\controller\BaseController.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\TransformerDataServiceImpl.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\ResponseCodeEnum.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\PythonYOLO.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\CustomMapper.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\entity\TransformerDataEntity.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\service\ImageDataService.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\repository\TransformerDataRepository.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\service\InspectionDataService.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\InspectionDataResponse.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\repository\InspectionDataRepository.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\service\util\exception\type\BaseException.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\service\TransformerDataService.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\service\util\StackTraceTracker.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\transport\request\FilterValue.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\ImageDataServiceImpl.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\service\util\SequenceGeneratorService.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\transport\request\ImageRequest.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\controller\TransformerDataController.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\InspectionDataServiceImpl.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\repository\ImageDataRepository.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\Anomaly.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\controller\DevFailedDetectionsController.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\controller\ImageDataController.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\transport\request\TransformerDataRequest.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\PageDetail.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\TransformerDataResponse.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\transport\request\FilterRequest.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\controller\InspectionDataController.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\constant\LoggingAdviceConstants.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\TransformerUiApplication.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\constant\AppConstant.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\AnomaliesResponse.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\ImageResponse.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\config\WebConfig.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\entity\InspectionDataEntity.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\ApiResponse.java
-D:\UOM\Semester 07\SOFTWARE DESIGN COMPETITION\phase 3\New folder\Transformer-Management-System-main\Transformer-Management-System-main\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\CommonMapper.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\repository\ImageDataRepository.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\entity\TransformerDataEntity.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\TransformerDataResponse.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\Anomaly.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\LoginServiceImpl.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\ResponseCodeEnum.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\controller\MaintenanceRecordController.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\util\exception\type\BaseException.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\request\FilterRequest.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\controller\BaseController.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\entity\InspectionDataEntity.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\controller\TransformerDataController.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\TransformerDataService.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\util\StackTraceTracker.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\constant\LoggingAdviceConstants.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\ImageDataService.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\repository\LoginRepository.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\CustomMapper.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\ImageDataServiceImpl.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\TransformerUiApplication.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\repository\MaintenanceRecordRepository.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\util\DataSpecificationUtil.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\request\FilterValue.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\ImageResponse.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\config\WebConfig.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\repository\InspectionDataRepository.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\MaintenanceRecordResponse.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\entity\MaintenanceRecordEntity.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\PythonYOLO.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\CommonMapper.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\ApiResponse.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\InspectionDataService.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\controller\ImageDataController.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\MaintenanceRecordServiceImpl.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\InspectionDataResponse.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\request\LoginRequest.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\entity\ImageDataEntity.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\controller\DevFailedDetectionsController.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\MaintenanceRecordService.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\util\SequenceGeneratorService.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\constant\AppConstant.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\request\ImageRequest.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\request\MaintenanceRecordRequest.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\entity\LoginEntity.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\InspectionDataServiceImpl.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\controller\InspectionDataController.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\PageDetail.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\AnomaliesResponse.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\LoginService.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\request\InspectionDataRequest.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\controller\LoginController.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\service\impl\TransformerDataServiceImpl.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\request\TransformerDataRequest.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\repository\TransformerDataRepository.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\transport\response\LoginResponse.java
+C:\Users\Rebecca Fernando\Documents\GitHub\Transformer-Management-System\backend\src\main\java\com\TransformerUI\TransformerUI\config\PythonConfig.java

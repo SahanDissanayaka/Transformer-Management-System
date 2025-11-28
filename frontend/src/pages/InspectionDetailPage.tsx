@@ -1,5 +1,6 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "../styles/InspectionDetail.css";
+import "../styles/LoadingSpinner.css";
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -43,6 +44,7 @@ export default function InspectionDetailPage() {
   const [thermal, setThermal] = useState<string | null>(null);
   const [thermalMeta, setThermalMeta] = useState<ThermalMeta>({});
   const [removedAnomalies, setRemovedAnomalies] = useState<Box[]>([]);
+  const [originalAnomalies, setOriginalAnomalies] = useState<AnomalyResponse[]>([]);
 
   // UI State
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -891,11 +893,39 @@ export default function InspectionDetailPage() {
     try {
       const response = await loadFeedbackLogsAPI(transformerNo!, inspectionNo!);
       if (response?.responseCode === "2000" && response.responseData?.logs) {
-        const logs =
+        const logsRaw =
           typeof response.responseData.logs === "string"
             ? JSON.parse(response.responseData.logs)
             : response.responseData.logs;
-        setFeedbackLog(Array.isArray(logs) ? logs : [logs]);
+        const logs = Array.isArray(logsRaw) ? logsRaw : [logsRaw];
+        setFeedbackLog(logs);
+
+        // Derive removed anomalies from delete-type feedback logs so they persist
+        const deletedLogs = logs.filter(
+          (l: any) => l?.originalAIDetection && l?.userModification?.action === "deleted"
+        );
+        const countsByClass: Record<string, number> = {};
+        const removedFromLogs: Box[] = [];
+        for (const l of deletedLogs) {
+          const orig = l.originalAIDetection;
+          const userMod = l.userModification;
+          const coords = Array.isArray(orig.box) ? orig.box : [0, 0, 0, 0];
+          const color = CLASS_COLORS[orig.class] || CLASS_COLORS.default;
+          countsByClass[orig.class] = (countsByClass[orig.class] || 0) + 1;
+          const idxForClass = countsByClass[orig.class];
+          removedFromLogs.push({
+            n: [coords[0], coords[1], coords[2], coords[3]],
+            color,
+            idx: idxForClass,
+            klass: orig.class,
+            conf: orig.confidence ?? 0,
+            aiDetected: true,
+            rejectedBy: userMod.modifiedBy,
+            rejectedAt: userMod.modifiedAt,
+          } as Box);
+        }
+
+        if (removedFromLogs.length > 0) setRemovedAnomalies(removedFromLogs);
       }
     } catch (error) {
       console.error("Error loading feedback logs:", error);
@@ -917,6 +947,7 @@ export default function InspectionDetailPage() {
             setThermal(src);
             const anomalies: AnomalyResponse[] =
               r.responseData?.anomaliesResponse?.anomalies || [];
+            setOriginalAnomalies(anomalies);
 
             if (typeof r.responseData?.anomaliesResponse !== "undefined") {
               setDetectionRan(true);
@@ -996,6 +1027,7 @@ export default function InspectionDetailPage() {
         setThermal(src);
         const anomalies: AnomalyResponse[] =
           view.responseData?.anomaliesResponse?.anomalies || [];
+        setOriginalAnomalies(anomalies);
         setErrorMsg(null);
         setDetectionRan(true);
 
@@ -3172,7 +3204,10 @@ export default function InspectionDetailPage() {
                 disabled={submittingBaseline}
                 style={{ flex: 1 }}
               >
-                {submittingBaseline ? "Uploading…" : "Submit Baseline"}
+                <span className="btn-loading">
+                  {submittingBaseline && <span className="spinner"></span>}
+                  {submittingBaseline ? "Uploading…" : "Submit Baseline"}
+                </span>
               </button>
             </div>
           </div>
@@ -3241,9 +3276,12 @@ export default function InspectionDetailPage() {
                 disabled={submittingThermal}
                 style={{ flex: 1 }}
               >
-                {submittingThermal
-                  ? "Uploading & Detecting"
-                  : "Submit Maintenance"}
+                <span className="btn-loading">
+                  {submittingThermal && <span className="spinner"></span>}
+                  {submittingThermal
+                    ? "Uploading & Detecting"
+                    : "Submit Maintenance"}
+                </span>
               </button>
               <button
                 className="button-primary-outline"
@@ -3370,15 +3408,62 @@ export default function InspectionDetailPage() {
           {feedbackLog.length > 0 && (
             <button
               onClick={() => {
+                const exportedBy =
+                  localStorage.getItem("userName") || localStorage.getItem("username") || "User";
+                const imageId = `${transformerNo}_${inspectionNo}`;
+
+                const modelPredictedAnomalies = (originalAnomalies || []).map(
+                  (a) => ({
+                    box: a.box.map((v) => parseFloat(v.toFixed(6))),
+                    class: a.class,
+                    confidence: a.confidence ?? a.conf ?? null,
+                  })
+                );
+
+                const finalAcceptedAnnotations = (thermalMeta.boxes || []).map(
+                  (b) => ({
+                    box: b.n.map((v) => parseFloat(v.toFixed(6))),
+                    class: b.klass,
+                    manual: b.aiDetected === false,
+                    annotator: (() => {
+                      if (b.aiDetected) return null;
+                      // prefer explicit rejectedBy (modifier); otherwise try to find a matching userAddition in feedback logs
+                      if (b.rejectedBy) return b.rejectedBy;
+                      const coordsKey = JSON.stringify(b.n.map((v) => parseFloat(v.toFixed(6))));
+                      const addition = (feedbackLog || []).find((f: any) => f.userAddition && JSON.stringify(f.userAddition.box.map((v: number) => parseFloat(v.toFixed(6)))) === coordsKey);
+                      return addition ? (addition as any).userAddition.addedBy : null;
+                    })(),
+                  })
+                );
+
+                const feedbackLogs = feedbackLog || [];
+
+                const removed = (feedbackLog || [])
+                  .filter(
+                    (l: any) =>
+                      (l as any).originalAIDetection &&
+                      (l as any).userModification &&
+                      (l as any).userModification.action === "deleted"
+                  )
+                  .map((l: any) => ({
+                    box: (l as any).originalAIDetection.box,
+                    class: (l as any).originalAIDetection.class,
+                    source: "AI",
+                    removedBy: (l as any).userModification.modifiedBy,
+                    removedAt: (l as any).userModification.modifiedAt,
+                    feedbackLog: l,
+                  }));
+
                 const feedbackData = {
-                  exportedAt: new Date().toLocaleString("en-US", {
-                    timeZone: "Asia/Colombo",
-                  }),
-                  imageData: {
-                    transformerNo,
-                    inspectionNo,
-                  },
-                  feedback: feedbackLog,
+                  imageId,
+                  transformerNo,
+                  inspectionNo,
+                  exportedAt: new Date().toISOString(),
+                  exportedBy,
+                  modelPredictedAnomalies,
+                  finalAcceptedAnnotations,
+                  feedbackLogs,
+                  removedAnomalies: removed,
                 };
                 const formattedJson = JSON.stringify(feedbackData, null, 2);
                 const blob = new Blob([formattedJson], {
@@ -3458,6 +3543,14 @@ export default function InspectionDetailPage() {
                   setFeedbackLog((prev) => [...prev, logData]);
                 }
 
+                // Show success message
+                const successMsg = document.createElement("div");
+                successMsg.textContent = "✅ Anomaly updated successfully";
+                successMsg.style.cssText =
+                  "position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:12px 20px;border-radius:6px;z-index:9999;font-weight:bold;";
+                document.body.appendChild(successMsg);
+                setTimeout(() => successMsg.remove(), 2000);
+
                 setEditingBoxId(null);
                 setNewBoxCoords(null);
                 setAddDrawingActive(false);
@@ -3467,22 +3560,78 @@ export default function InspectionDetailPage() {
               }
             }}
             onReject={(anomalyIdx) => {
-              const userName = localStorage.getItem("userName") || "User";
-              const rejectedBox = thermalMeta.boxes?.find(
-                (b) => b.idx === anomalyIdx
-              );
-              if (rejectedBox) {
+              (async () => {
+                const userName =
+                  localStorage.getItem("userName") || localStorage.getItem("username") || "User";
+                const rejectedBox = thermalMeta.boxes?.find((b) => b.idx === anomalyIdx);
+                if (!rejectedBox) return;
+
+                // Optimistically update UI
                 const updatedBox = {
                   ...rejectedBox,
                   rejectedBy: userName,
                   rejectedAt: new Date().toLocaleString(),
                 };
-                setRemovedAnomalies((prev) => [...prev, updatedBox]);
                 setThermalMeta((prev) => ({
                   ...prev,
                   boxes: prev.boxes?.filter((b) => b.idx !== anomalyIdx),
                 }));
-              }
+
+                try {
+                  // Persist the removal via the existing API (deleteAnomaly)
+                  const logData = await deleteAnomaly(
+                    transformerNo!,
+                    inspectionNo!,
+                    rejectedBox,
+                    thermalMeta.boxes?.filter((b) => b.idx !== anomalyIdx) || []
+                  );
+
+                  if (logData) {
+                    setFeedbackLog((prev) => [...prev, logData]);
+
+                    const orig = (logData as any).originalAIDetection;
+                    const coords = Array.isArray(orig.box) ? orig.box : [0, 0, 0, 0];
+                    const color = CLASS_COLORS[orig.class] || CLASS_COLORS.default;
+                    const removedBoxBase = {
+                      n: [coords[0], coords[1], coords[2], coords[3]],
+                      color,
+                      klass: orig.class,
+                      conf: orig.confidence ?? 0,
+                      aiDetected: true,
+                      rejectedBy: (logData as any).userModification?.modifiedBy || userName,
+                      rejectedAt: (logData as any).userModification?.modifiedAt || new Date().toLocaleString(),
+                    } as Omit<Box, "idx">;
+                    setRemovedAnomalies((prev) => {
+                      const count = prev.filter((r) => r.klass === orig.class).length;
+                      const idxForClass = count + 1;
+                      return [...prev, { ...removedBoxBase, idx: idxForClass } as Box];
+                    });
+                  } else {
+                    // fallback: keep the optimistic removed box but assign per-class idx
+                    setRemovedAnomalies((prev) => {
+                      const count = prev.filter((r) => r.klass === updatedBox.klass).length;
+                      const idxForClass = count + 1;
+                      return [...prev, { ...updatedBox, idx: idxForClass } as Box];
+                    });
+                  }
+
+                  // Show success message
+                  const successMsg = document.createElement("div");
+                  successMsg.textContent = "✅ Anomaly rejected";
+                  successMsg.style.cssText =
+                    "position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:12px 20px;border-radius:6px;z-index:9999;font-weight:bold;";
+                  document.body.appendChild(successMsg);
+                  setTimeout(() => successMsg.remove(), 2000);
+                } catch (err) {
+                  console.error(err);
+                  // revert UI on failure
+                  setThermalMeta((prev) => ({
+                    ...prev,
+                    boxes: [...(prev.boxes ?? []), rejectedBox],
+                  }));
+                  alert("Error removing anomaly");
+                }
+              })();
             }}
             onDelete={async (anomalyIdx) => {
               const boxToDelete = thermalMeta.boxes?.find(
@@ -3505,7 +3654,35 @@ export default function InspectionDetailPage() {
 
                 if (logData) {
                   setFeedbackLog((prev) => [...prev, logData]);
+                  // also add to removedAnomalies so it persists on reload
+                  const orig = (logData as any).originalAIDetection;
+                  if (orig) {
+                    const coords = Array.isArray(orig.box) ? orig.box : [0, 0, 0, 0];
+                    const color = CLASS_COLORS[orig.class] || CLASS_COLORS.default;
+                    const removedBoxBase = {
+                      n: [coords[0], coords[1], coords[2], coords[3]],
+                      color,
+                      klass: orig.class,
+                      conf: orig.confidence ?? 0,
+                      aiDetected: true,
+                      rejectedBy: (logData as any).userModification?.modifiedBy || undefined,
+                      rejectedAt: (logData as any).userModification?.modifiedAt || undefined,
+                    } as Omit<Box, "idx">;
+                    setRemovedAnomalies((prev) => {
+                      const count = prev.filter((r) => r.klass === orig.class).length;
+                      const idxForClass = count + 1;
+                      return [...prev, { ...removedBoxBase, idx: idxForClass } as Box];
+                    });
+                  }
                 }
+
+                // Show success message
+                const successMsg = document.createElement("div");
+                successMsg.textContent = "✅ Anomaly deleted";
+                successMsg.style.cssText =
+                  "position:fixed;top:20px;right:20px;background:#ef4444;color:white;padding:12px 20px;border-radius:6px;z-index:9999;font-weight:bold;";
+                document.body.appendChild(successMsg);
+                setTimeout(() => successMsg.remove(), 2000);
               } catch (err) {
                 console.error(err);
                 alert("Error deleting anomaly");
@@ -3547,9 +3724,9 @@ export default function InspectionDetailPage() {
             style={{
               padding: "8px 14px",
               borderRadius: 8,
-              border: "1px solid #e5e7eb",
-              background: "#f8fafc",
-              color: "#111827",
+              border: "1px solid rgba(0, 212, 255, 0.3)",
+              background: "rgba(0, 212, 255, 0.1)",
+              color: "var(--text)",
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -3566,14 +3743,16 @@ export default function InspectionDetailPage() {
                 flexWrap: "wrap",
               }}
             >
-              <label style={{ fontWeight: 600 }}>Error type:</label>
+              <label style={{ fontWeight: 600, color: "var(--text)" }}>Error type:</label>
               <select
                 value={newAnomalyClass}
                 onChange={(e) => setNewAnomalyClass(e.target.value)}
                 style={{
                   padding: "8px 10px",
                   borderRadius: 8,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid rgba(0, 212, 255, 0.3)",
+                  background: "rgba(0, 212, 255, 0.08)",
+                  color: "var(--text)",
                 }}
               >
                 {Object.keys(CLASS_COLORS)
@@ -3584,7 +3763,7 @@ export default function InspectionDetailPage() {
                     </option>
                   ))}
               </select>
-              <span style={{ color: "#64748b", fontSize: 13 }}>
+              <span style={{ color: "var(--muted)", fontSize: 13 }}>
                 {newAnomalyCoords
                   ? `(${newAnomalyCoords.map((v) => v.toFixed(3)).join(", ")})`
                   : "Draw a rectangle on the thermal image"}
@@ -3643,30 +3822,35 @@ export default function InspectionDetailPage() {
                   color: "#fff",
                   fontWeight: 700,
                   cursor: newAnomalyCoords ? "pointer" : "not-allowed",
+                  opacity: newAnomalyCoords ? 1 : 0.6,
                 }}
               >
-                Save
+                ✓ Confirm
               </button>
 
               <button
                 onClick={() => {
+                  if (editingBoxId !== null) {
+                    // Cancel edit mode
+                    setEditingBoxId(null);
+                  }
                   setAddDrawingActive(false);
                   setNewAnomalyCoords(null);
                 }}
                 style={{
                   padding: "8px 14px",
                   borderRadius: 8,
-                  border: "1px solid #e5e7eb",
-                  background: "#fff",
-                  color: "#64748b",
+                  border: "1px solid rgba(0, 212, 255, 0.3)",
+                  background: "rgba(0, 212, 255, 0.08)",
+                  color: "var(--text)",
                   fontWeight: 700,
                   cursor: "pointer",
                 }}
               >
-                Cancel
+                ✕ Cancel
               </button>
             </div>
-            <div style={{ color: "#64748b", fontSize: 13 }}>
+            <div style={{ color: "var(--muted)", fontSize: 13 }}>
               Tip: With drawing active, pan/zoom is disabled on the thermal
               image. Click and drag to draw the box.
             </div>
@@ -3683,10 +3867,10 @@ export default function InspectionDetailPage() {
               <div
                 key={box.idx}
                 style={{
-                  border: `2px solid #e5e7eb`,
+                  border: `2px solid rgba(0, 212, 255, 0.3)`,
                   borderRadius: 12,
                   padding: "14px 20px",
-                  background: "#f9fafb",
+                  background: "rgba(0, 212, 255, 0.08)",
                   opacity: 0.85,
                 }}
               >
@@ -3720,6 +3904,7 @@ export default function InspectionDetailPage() {
                         fontWeight: 600,
                         fontSize: 14,
                         marginBottom: 2,
+                        color: "var(--text)",
                       }}
                     >
                       {box.klass}
@@ -3730,7 +3915,7 @@ export default function InspectionDetailPage() {
                         alignItems: "center",
                         gap: 6,
                         fontSize: 12,
-                        color: "#64748b",
+                        color: "var(--muted)",
                       }}
                     >
                       <span>
@@ -3750,23 +3935,23 @@ export default function InspectionDetailPage() {
                       borderRadius: 4,
                       fontSize: 12,
                       fontWeight: 600,
-                      background: "#fee2e2",
-                      color: "#991b1b",
+                      background: "rgba(239, 68, 68, 0.2)",
+                      color: "rgba(239, 68, 68, 1)",
                     }}
                   >
                     Rejected
                   </div>
                 </div>
-                <div style={{ fontSize: 13, color: "#64748b", marginTop: 8 }}>
+                <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>
                   <div>
                     BBox: ({box.n[0].toFixed(3)}, {box.n[1].toFixed(3)}) — (
                     {box.n[2].toFixed(3)}, {box.n[3].toFixed(3)})
                   </div>
                   <div style={{ marginTop: 4 }}>
-                    Rejected by: <strong>{box.rejectedBy}</strong>
+                    Rejected by: <strong style={{ color: "var(--text)" }}>{box.rejectedBy}</strong>
                   </div>
                   <div style={{ marginTop: 2 }}>
-                    Rejected at: <strong>{box.rejectedAt}</strong>
+                    Rejected at: <strong style={{ color: "var(--text)" }}>{box.rejectedAt}</strong>
                   </div>
                 </div>
               </div>
