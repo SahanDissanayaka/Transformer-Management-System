@@ -36,3 +36,16 @@ export function mapAnomaliestoBoxes(anomalies: AnomalyResponse[]): Box[] {
     };
   });
 }
+
+/**
+ * Compare two bounding boxes approximately to account for floating point
+ * differences. Returns true when all coordinate differences are within
+ * the specified epsilon.
+ */
+export function boxesApproximatelyEqual(a: number[], b: number[], eps = 1e-3): boolean {
+  if (!a || !b || a.length < 4 || b.length < 4) return false;
+  for (let i = 0; i < 4; i++) {
+    if (Math.abs(Number(a[i]) - Number(b[i])) > eps) return false;
+  }
+  return true;
+}

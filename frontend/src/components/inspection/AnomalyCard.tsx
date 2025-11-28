@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import type { Box } from "../../types/inspection.types";
 
 interface AnomalyCardProps {
@@ -26,9 +27,14 @@ export function AnomalyCard({
   const [notesList, setNotesList] = useState<
     Array<{ text: string; by: string; at: string }>
   >([]);
-  const changedBy = box.aiDetected === false ? "User" : "AI-YOLOv8";
-  const changedAt = new Date().toLocaleString();
-  const userName = localStorage.getItem("userName") || "User";
+  const { username } = useAuth();
+  const userName = username || localStorage.getItem("username") || "User";
+  // prefer explicit metadata on the box (rejectedBy/rejectedAt), otherwise
+  // fall back to the logged-in username for user-created/updated boxes,
+  // and show the AI source for original model detections.
+  const changedBy =
+    box.rejectedBy || (box.userAdded ? userName : box.aiDetected === false ? userName : "AI-YOLOv8");
+  const changedAt = box.rejectedAt || new Date().toLocaleString();
   const [x1, y1, x2, y2] = box.n;
 
   return (
@@ -77,23 +83,23 @@ export function AnomalyCard({
           <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, color: "var(--text)" }}>
             {box.klass}
           </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 12,
-              color: "var(--muted)",
-            }}
-          >
-            <span>{box.aiDetected === false ? "Not AI Detected" : "AI Detection"}</span>
-            <span>•</span>
-            <span>
-              {box.aiDetected === false
-                ? "User"
-                : `${(box.conf * 100).toFixed(0)}% confidence`}
-            </span>
-          </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 12,
+                color: "var(--muted)",
+              }}
+            >
+              <span>{box.aiDetected === false ? "Not AI Detected" : "AI Detection"}</span>
+              <span>•</span>
+              <span>
+                {box.aiDetected === false
+                  ? userName
+                  : `${(box.conf * 100).toFixed(0)}% confidence`}
+              </span>
+            </div>
         </div>
 
         {/* Status badges in collapsed view */}

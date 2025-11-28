@@ -1,5 +1,4 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import "../styles/InspectionDetail.css";
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -52,9 +51,6 @@ export default function InspectionDetailPage() {
   // File uploads
   const [baselineFile, setBaselineFile] = useState<File | null>(null);
   const [thermalFile, setThermalFile] = useState<File | null>(null);
-  // Drag & Drop state
-  const [baselineDragActive, setBaselineDragActive] = useState(false);
-  const [thermalDragActive, setThermalDragActive] = useState(false);
   const [submittingBaseline, setSubmittingBaseline] = useState(false);
   const [submittingThermal, setSubmittingThermal] = useState(false);
 
@@ -3093,160 +3089,85 @@ export default function InspectionDetailPage() {
       )}
 
       {/* Upload Section */}
-      <div style={{ marginBottom: 24 }}>
-        <h3
-          style={{
-            marginTop: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            fontSize: 20,
-          }}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3 style={{ marginTop: 0 }}>Upload Images</h3>
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
         >
-          <span style={{ fontSize: 22 }}>🖼️</span> Upload Images
-          <span className="mode-badge">Assets</span>
-        </h3>
-        <div className="upload-section">
-          {/* Baseline Upload Card */}
-          <div className="upload-card">
-            <h4>
-              <span>📏</span>Baseline Image
-            </h4>
-            <div className="upload-label">Weather</div>
+          <div style={{ display: "grid", gap: 8, minWidth: 280 }}>
+            <label>
+              <strong>Baseline</strong>
+            </label>
+            <label>Weather</label>
             <select
-              className="weather-select"
+              className="input"
               value={weatherBaseline}
               onChange={(e) => setWeatherBaseline(e.target.value as Weather)}
             >
-              <option value="SUNNY">Sunny ☀️</option>
-              <option value="CLOUDY">Cloudy ☁️</option>
-              <option value="RAINY">Rainy 🌧️</option>
+              <option value="SUNNY">Sunny</option>
+              <option value="CLOUDY">Cloudy</option>
+              <option value="RAINY">Rainy</option>
             </select>
-            <label
-              className={`file-input-wrapper ${
-                baselineDragActive ? "drag-active" : ""
-              }`}
-              onDragOver={(e) => {
-                e.preventDefault();
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                setBaselineFile(f);
               }}
-              onDragEnter={(e) => {
-                e.preventDefault();
-                setBaselineDragActive(true);
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                setBaselineDragActive(false);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                setBaselineDragActive(false);
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                  const f = e.dataTransfer.files[0];
-                  setBaselineFile(f);
-                  e.dataTransfer.clearData();
-                }
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: 13 }}>
-                Click or Drag to Select
-              </div>
-              <div className="file-hint">JPEG / PNG / WEBP</div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setBaselineFile(f);
-                }}
-              />
-            </label>
+            />
             {baselineFile && (
-              <div className="selected-file">
-                <strong>Selected:</strong> {baselineFile.name}
+              <div style={{ fontSize: 12, opacity: 0.8 }}>
+                Selected: <em>{baselineFile.name}</em>
               </div>
             )}
-            <div className="action-row">
-              <button
-                className="btn primary"
-                onClick={() => handleSubmit("Baseline")}
-                disabled={submittingBaseline}
-                style={{ flex: 1 }}
-              >
-                {submittingBaseline ? "Uploading…" : "Submit Baseline"}
-              </button>
-            </div>
+            <button
+              className="btn primary"
+              onClick={() => handleSubmit("Baseline")}
+              disabled={submittingBaseline}
+            >
+              {submittingBaseline ? "Uploading…" : "Submit Baseline"}
+            </button>
           </div>
-          {/* Maintenance / Thermal Upload Card */}
-          <div className="upload-card">
-            <h4>
-              <span>🔥</span>Maintenance (Thermal)
-            </h4>
-            <div className="upload-label">Weather</div>
+          <div style={{ display: "grid", gap: 8, minWidth: 280 }}>
+            <label>
+              <strong>Maintenance</strong>
+            </label>
+            <label>Weather</label>
             <select
-              className="weather-select"
+              className="input"
               value={weatherThermal}
               onChange={(e) => setWeatherThermal(e.target.value as Weather)}
             >
-              <option value="SUNNY">Sunny ☀️</option>
-              <option value="CLOUDY">Cloudy ☁️</option>
-              <option value="RAINY">Rainy 🌧️</option>
+              <option value="SUNNY">Sunny</option>
+              <option value="CLOUDY">Cloudy</option>
+              <option value="RAINY">Rainy</option>
             </select>
-            <label
-              className={`file-input-wrapper ${
-                thermalDragActive ? "drag-active" : ""
-              }`}
-              onDragOver={(e) => {
-                e.preventDefault();
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                setThermalFile(f);
               }}
-              onDragEnter={(e) => {
-                e.preventDefault();
-                setThermalDragActive(true);
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                setThermalDragActive(false);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                setThermalDragActive(false);
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                  const f = e.dataTransfer.files[0];
-                  setThermalFile(f);
-                  e.dataTransfer.clearData();
-                }
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: 13 }}>
-                Click or Drag to Select
-              </div>
-              <div className="file-hint">JPEG / PNG / WEBP</div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setThermalFile(f);
-                }}
-              />
-            </label>
+            />
             {thermalFile && (
-              <div className="selected-file">
-                <strong>Selected:</strong> {thermalFile.name}
+              <div style={{ fontSize: 12, opacity: 0.8 }}>
+                Selected: <em>{thermalFile.name}</em>
               </div>
             )}
-            <div className="action-row">
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <button
                 className="btn primary"
                 onClick={() => handleSubmit("Thermal")}
                 disabled={submittingThermal}
-                style={{ flex: 1 }}
               >
                 {submittingThermal
                   ? "Uploading & Detecting"
                   : "Submit Maintenance"}
               </button>
               <button
-                className="button-primary-outline"
+                className="btn"
                 onClick={() => setShowRulesModal(true)}
                 aria-haspopup="dialog"
               >
@@ -3467,11 +3388,14 @@ export default function InspectionDetailPage() {
               }
             }}
             onReject={(anomalyIdx) => {
-              const userName = localStorage.getItem("userName") || "User";
-              const rejectedBox = thermalMeta.boxes?.find(
-                (b) => b.idx === anomalyIdx
-              );
-              if (rejectedBox) {
+              (async () => {
+                const userName = username || localStorage.getItem("username") || "User";
+                const rejectedBox = thermalMeta.boxes?.find(
+                  (b) => b.idx === anomalyIdx
+                );
+                if (!rejectedBox) return;
+
+                // Optimistically move to removedAnomalies in UI
                 const updatedBox = {
                   ...rejectedBox,
                   rejectedBy: userName,
@@ -3506,6 +3430,18 @@ export default function InspectionDetailPage() {
                 if (logData) {
                   setFeedbackLog((prev) => [...prev, logData]);
                 }
+                // add to removedAnomalies so it persists in UI
+                const userName = username || localStorage.getItem("username") || "User";
+                const updatedBox = {
+                  ...boxToDelete,
+                  rejectedBy: userName,
+                  rejectedAt: new Date().toLocaleString(),
+                } as Box;
+                setRemovedAnomalies((prev) => {
+                  const key = updatedBox.n.join(",");
+                  if (prev.some((p) => p.n.join(",") === key)) return prev;
+                  return [...prev, updatedBox];
+                });
               } catch (err) {
                 console.error(err);
                 alert("Error deleting anomaly");
@@ -3679,98 +3615,107 @@ export default function InspectionDetailPage() {
         <div className="card" style={{ marginTop: 16 }}>
           <h3 style={{ marginTop: 0 }}>Removed Anomalies</h3>
           <div style={{ display: "grid", gap: 8 }}>
-            {removedAnomalies.map((box) => (
-              <div
-                key={box.idx}
-                style={{
-                  border: `2px solid #e5e7eb`,
-                  borderRadius: 12,
-                  padding: "14px 20px",
-                  background: "#f9fafb",
-                  opacity: 0.85,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    marginBottom: 8,
-                  }}
-                >
+            {(() => {
+              // compute per-type sequential numbering for removed anomalies
+              const typeCounts: Record<string, number> = {};
+              return removedAnomalies.map((box, i) => {
+                const t = box.klass || "Unknown";
+                typeCounts[t] = (typeCounts[t] || 0) + 1;
+                const displayNumber = typeCounts[t];
+                return (
                   <div
+                    key={box.n ? box.n.join(",") : `${box.idx}-${i}`}
                     style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      background: box.color,
-                      display: "grid",
-                      placeItems: "center",
-                      color: "#fff",
-                      fontWeight: 700,
-                      fontSize: 14,
-                      flexShrink: 0,
+                      border: `2px solid #e5e7eb`,
+                      borderRadius: 12,
+                      padding: "14px 20px",
+                      background: "#f9fafb",
+                      opacity: 0.85,
                     }}
                   >
-                    {box.idx}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        fontSize: 14,
-                        marginBottom: 2,
-                      }}
-                    >
-                      {box.klass}
-                    </div>
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 6,
-                        fontSize: 12,
-                        color: "#64748b",
+                        gap: 10,
+                        marginBottom: 8,
                       }}
                     >
-                      <span>
-                        {box.aiDetected === false
-                          ? "Not AI Detected"
-                          : "AI Detection"}
-                      </span>
-                      {box.aiDetected === false ? null : <span>•</span>}
-                      {box.aiDetected === false ? null : (
-                        <span>{(box.conf * 100).toFixed(0)}% confidence</span>
-                      )}
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: "50%",
+                          background: box.color,
+                          display: "grid",
+                          placeItems: "center",
+                          color: "#fff",
+                          fontWeight: 700,
+                          fontSize: 14,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {displayNumber}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            fontSize: 14,
+                            marginBottom: 2,
+                          }}
+                        >
+                          {box.klass}
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            fontSize: 12,
+                            color: "#64748b",
+                          }}
+                        >
+                          <span>
+                            {box.aiDetected === false
+                              ? "Not AI Detected"
+                              : "AI Detection"}
+                          </span>
+                          {box.aiDetected === false ? null : <span>•</span>}
+                          {box.aiDetected === false ? null : (
+                            <span>{(box.conf * 100).toFixed(0)}% confidence</span>
+                          )}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          padding: "3px 10px",
+                          borderRadius: 4,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          background: "#fee2e2",
+                          color: "#991b1b",
+                        }}
+                      >
+                        Rejected
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 13, color: "#64748b", marginTop: 8 }}>
+                      <div>
+                        BBox: ({box.n[0].toFixed(3)}, {box.n[1].toFixed(3)}) — (
+                        {box.n[2].toFixed(3)}, {box.n[3].toFixed(3)})
+                      </div>
+                      <div style={{ marginTop: 4 }}>
+                        Rejected by: <strong>{box.rejectedBy}</strong>
+                      </div>
+                      <div style={{ marginTop: 2 }}>
+                        Rejected at: <strong>{box.rejectedAt}</strong>
+                      </div>
                     </div>
                   </div>
-                  <div
-                    style={{
-                      padding: "3px 10px",
-                      borderRadius: 4,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      background: "#fee2e2",
-                      color: "#991b1b",
-                    }}
-                  >
-                    Rejected
-                  </div>
-                </div>
-                <div style={{ fontSize: 13, color: "#64748b", marginTop: 8 }}>
-                  <div>
-                    BBox: ({box.n[0].toFixed(3)}, {box.n[1].toFixed(3)}) — (
-                    {box.n[2].toFixed(3)}, {box.n[3].toFixed(3)})
-                  </div>
-                  <div style={{ marginTop: 4 }}>
-                    Rejected by: <strong>{box.rejectedBy}</strong>
-                  </div>
-                  <div style={{ marginTop: 2 }}>
-                    Rejected at: <strong>{box.rejectedAt}</strong>
-                  </div>
-                </div>
-              </div>
-            ))}
+                );
+              });
+            })()}
           </div>
         </div>
       )}

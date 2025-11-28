@@ -20,7 +20,7 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <TransformersPage /> },
+      { index: true, element: <Home /> },
       { path: "transformers", element: <TransformersPage /> },
       {
         path: "transformers/:transformerNo",
