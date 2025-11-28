@@ -1,5 +1,6 @@
 import type { Box, FeedbackLog } from "../types/inspection.types";
 import { updateAnomalies as updateAnomaliesAPI } from "../api/detectionApi";
+import { viewImage } from "../api/imageDataApi";
 
 /**
  * Internal helper to update anomalies via API
@@ -16,12 +17,32 @@ async function updateAnomalies(
   }>,
   logs?: FeedbackLog | null
 ): Promise<void> {
+  let logsToSend: any = undefined;
+  if (logs) {
+    try {
+      // Try to fetch existing logs and append to avoid overwriting previous feedback
+      const view = await viewImage(transformerNo, inspectionNo, "Thermal");
+      const existingRaw = view?.responseData?.logs;
+      let existingLogs: any[] = [];
+      if (existingRaw) {
+        existingLogs = typeof existingRaw === "string" ? JSON.parse(existingRaw) : existingRaw;
+        if (!Array.isArray(existingLogs)) existingLogs = [existingLogs];
+      }
+
+      const newLogsArray = Array.isArray(logs) ? logs : [logs];
+      logsToSend = JSON.stringify([...existingLogs, ...newLogsArray]);
+    } catch (err) {
+      // If fetching existing logs fails, fallback to sending only the new log(s)
+      logsToSend = JSON.stringify(Array.isArray(logs) ? logs : [logs]);
+    }
+  }
+
   await updateAnomaliesAPI({
     transformerNo,
     inspectionNo,
     type: "Thermal",
     detectionJson: JSON.stringify(anomalies),
-    logs: logs ? JSON.stringify(logs) : undefined,
+    logs: logsToSend,
   });
 }
 
@@ -34,26 +55,27 @@ export async function deleteAnomaly(
   boxToDelete: Box,
   remainingBoxes: Box[]
 ): Promise<FeedbackLog | null> {
-  const userName = localStorage.getItem("userName") || "User";
+  const userName =
+    localStorage.getItem("userName") || localStorage.getItem("username") || "User";
 
-  let logData: FeedbackLog | null = null;
-  if (boxToDelete.aiDetected) {
-    logData = {
-      imageId: `${transformerNo}_${inspectionNo}`,
-      originalAIDetection: {
-        box: boxToDelete.n,
-        class: boxToDelete.klass,
-        confidence: boxToDelete.conf,
-      },
-      userModification: {
-        action: "deleted" as const,
-        modifiedAt: new Date().toLocaleString("en-US", {
-          timeZone: "Asia/Colombo",
-        }),
-        modifiedBy: userName,
-      },
-    };
-  }
+  // Always create a deletion log so removals persist, even for user-added anomalies.
+  const deletionLog: FeedbackLog = {
+    imageId: `${transformerNo}_${inspectionNo}`,
+    originalAIDetection: {
+      box: boxToDelete.n,
+      class: boxToDelete.klass,
+      confidence: boxToDelete.conf ?? 0,
+    },
+    userModification: {
+      action: "deleted" as const,
+      modifiedAt: new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Colombo",
+      }),
+      modifiedBy: userName,
+    },
+  };
+
+  let logData: FeedbackLog | null = deletionLog;
 
   const remainingAnomalies = remainingBoxes.map((b) => ({
     box: b.n.map((v) => parseFloat(v.toFixed(6))),
@@ -83,7 +105,8 @@ export async function editAnomaly(
   newCoords: [number, number, number, number],
   allBoxes: Box[]
 ): Promise<FeedbackLog | null> {
-  const userName = localStorage.getItem("userName") || "User";
+  const userName =
+    localStorage.getItem("userName") || localStorage.getItem("username") || "User";
 
   let logData: FeedbackLog | null = null;
   if (boxToEdit.aiDetected) {
@@ -145,7 +168,8 @@ export async function addAnomaly(
   anomalyClass: string,
   allBoxes: Box[]
 ): Promise<FeedbackLog> {
-  const userName = localStorage.getItem("userName") || "User";
+  const userName =
+    localStorage.getItem("userName") || localStorage.getItem("username") || "User";
 
   const newAnomalyData = {
     box: newCoords.map((v) => parseFloat(v.toFixed(6))),

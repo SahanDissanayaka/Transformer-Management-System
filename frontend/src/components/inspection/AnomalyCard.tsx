@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { Box } from "../../types/inspection.types";
-
 interface AnomalyCardProps {
   box: Box;
   onReject?: () => void;
@@ -26,9 +25,10 @@ export function AnomalyCard({
   const [notesList, setNotesList] = useState<
     Array<{ text: string; by: string; at: string }>
   >([]);
-  const changedBy = box.aiDetected === false ? "User" : "AI-YOLOv8";
-  const changedAt = new Date().toLocaleString();
-  const userName = localStorage.getItem("userName") || "User";
+  const userName =
+    localStorage.getItem("userName") || localStorage.getItem("username") || "User";
+  const changedBy = box.aiDetected === false ? box.rejectedBy ?? userName : "AI-YOLOv8";
+  const changedAt = box.rejectedAt ?? new Date().toLocaleString();
   const [x1, y1, x2, y2] = box.n;
 
   return (
@@ -57,18 +57,18 @@ export function AnomalyCard({
         }}
       >
         <div
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: "50%",
-            background: box.color,
-            color: "#fff",
-            display: "grid",
-            placeItems: "center",
-            fontWeight: 700,
-            fontSize: 14,
-            flexShrink: 0,
-          }}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              display: "grid",
+              placeItems: "center",
+              background: box.color,
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 14,
+              flexShrink: 0,
+            }}
         >
           {box.idx}
         </div>
@@ -90,7 +90,7 @@ export function AnomalyCard({
             <span>•</span>
             <span>
               {box.aiDetected === false
-                ? "User"
+                ? box.rejectedBy ?? userName
                 : `${(box.conf * 100).toFixed(0)}% confidence`}
             </span>
           </div>

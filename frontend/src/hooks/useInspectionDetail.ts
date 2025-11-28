@@ -7,6 +7,7 @@ export function useInspectionDetail(transformerNo?: string, inspectionNo?: strin
   const [baseline, setBaseline] = useState<string | null>(null);
   const [thermal, setThermal] = useState<string | null>(null);
   const [thermalMeta, setThermalMeta] = useState<ThermalMeta>({});
+  const [originalAnomalies, setOriginalAnomalies] = useState<AnomalyResponse[]>([]);
   const [removedAnomalies, setRemovedAnomalies] = useState<Box[]>([]);
   const [feedbackLog, setFeedbackLog] = useState<FeedbackLog[]>([]);
   
@@ -55,6 +56,7 @@ export function useInspectionDetail(transformerNo?: string, inspectionNo?: strin
           } else {
             setThermal(src);
             const anomalies: AnomalyResponse[] = r.responseData?.anomaliesResponse?.anomalies || [];
+            setOriginalAnomalies(anomalies);
             
             if (typeof r.responseData?.anomaliesResponse !== "undefined") {
               setDetectionRan(true);
@@ -117,9 +119,10 @@ export function useInspectionDetail(transformerNo?: string, inspectionNo?: strin
       } else {
         setThermal(src);
         const anomalies: AnomalyResponse[] = view.responseData?.anomaliesResponse?.anomalies || [];
+        setOriginalAnomalies(anomalies);
         setErrorMsg(null);
         setDetectionRan(true);
-        
+
         const boxes = mapAnomaliestoBoxes(anomalies);
         setThermalMeta({ dateTime: view.responseData.dateTime, weather: normalizeWeather(view.responseData.weather), boxes });
         setThermalFile(null);
@@ -136,10 +139,11 @@ export function useInspectionDetail(transformerNo?: string, inspectionNo?: strin
     }
   };
 
-  return {
+    return {
     baseline,
     thermal,
     thermalMeta,
+      originalAnomalies,
     setThermalMeta,
     removedAnomalies,
     setRemovedAnomalies,
