@@ -34,7 +34,7 @@ export async function deleteAnomaly(
   boxToDelete: Box,
   remainingBoxes: Box[]
 ): Promise<FeedbackLog | null> {
-  const userName = localStorage.getItem("userName") || "User";
+  const userName = localStorage.getItem("username") || "User";
 
   let logData: FeedbackLog | null = null;
   if (boxToDelete.aiDetected) {
@@ -83,7 +83,7 @@ export async function editAnomaly(
   newCoords: [number, number, number, number],
   allBoxes: Box[]
 ): Promise<FeedbackLog | null> {
-  const userName = localStorage.getItem("userName") || "User";
+  const userName = localStorage.getItem("username") || "User";
 
   let logData: FeedbackLog | null = null;
   if (boxToEdit.aiDetected) {
@@ -112,7 +112,7 @@ export async function editAnomaly(
     manual: b.idx === boxToEdit.idx ? true : !b.aiDetected,
     user:
       b.idx === boxToEdit.idx
-        ? "User"
+        ? userName
         : !b.aiDetected
         ? b.rejectedBy || userName
         : undefined,
@@ -145,7 +145,7 @@ export async function addAnomaly(
   anomalyClass: string,
   allBoxes: Box[]
 ): Promise<FeedbackLog> {
-  const userName = localStorage.getItem("userName") || "User";
+  const userName = localStorage.getItem("username") || "User";
 
   const newAnomalyData = {
     box: newCoords.map((v) => parseFloat(v.toFixed(6))),

@@ -1,5 +1,4 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import "../styles/InspectionDetail.css";
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -53,9 +52,6 @@ export default function InspectionDetailPage() {
   // File uploads
   const [baselineFile, setBaselineFile] = useState<File | null>(null);
   const [thermalFile, setThermalFile] = useState<File | null>(null);
-  // Drag & Drop state
-  const [baselineDragActive, setBaselineDragActive] = useState(false);
-  const [thermalDragActive, setThermalDragActive] = useState(false);
   const [submittingBaseline, setSubmittingBaseline] = useState(false);
   const [submittingThermal, setSubmittingThermal] = useState(false);
 
@@ -2731,160 +2727,85 @@ export default function InspectionDetailPage() {
       )}
 
       {/* Upload Section */}
-      <div style={{ marginBottom: 24 }}>
-        <h3
-          style={{
-            marginTop: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            fontSize: 20,
-          }}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3 style={{ marginTop: 0 }}>Upload Images</h3>
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
         >
-          <span style={{ fontSize: 22 }}>🖼️</span> Upload Images
-          <span className="mode-badge">Assets</span>
-        </h3>
-        <div className="upload-section">
-          {/* Baseline Upload Card */}
-          <div className="upload-card">
-            <h4>
-              <span>📏</span>Baseline Image
-            </h4>
-            <div className="upload-label">Weather</div>
+          <div style={{ display: "grid", gap: 8, minWidth: 280 }}>
+            <label>
+              <strong>Baseline</strong>
+            </label>
+            <label>Weather</label>
             <select
-              className="weather-select"
+              className="input"
               value={weatherBaseline}
               onChange={(e) => setWeatherBaseline(e.target.value as Weather)}
             >
-              <option value="SUNNY">Sunny ☀️</option>
-              <option value="CLOUDY">Cloudy ☁️</option>
-              <option value="RAINY">Rainy 🌧️</option>
+              <option value="SUNNY">Sunny</option>
+              <option value="CLOUDY">Cloudy</option>
+              <option value="RAINY">Rainy</option>
             </select>
-            <label
-              className={`file-input-wrapper ${
-                baselineDragActive ? "drag-active" : ""
-              }`}
-              onDragOver={(e) => {
-                e.preventDefault();
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                setBaselineFile(f);
               }}
-              onDragEnter={(e) => {
-                e.preventDefault();
-                setBaselineDragActive(true);
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                setBaselineDragActive(false);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                setBaselineDragActive(false);
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                  const f = e.dataTransfer.files[0];
-                  setBaselineFile(f);
-                  e.dataTransfer.clearData();
-                }
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: 13 }}>
-                Click or Drag to Select
-              </div>
-              <div className="file-hint">JPEG / PNG / WEBP</div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setBaselineFile(f);
-                }}
-              />
-            </label>
+            />
             {baselineFile && (
-              <div className="selected-file">
-                <strong>Selected:</strong> {baselineFile.name}
+              <div style={{ fontSize: 12, opacity: 0.8 }}>
+                Selected: <em>{baselineFile.name}</em>
               </div>
             )}
-            <div className="action-row">
-              <button
-                className="btn primary"
-                onClick={() => handleSubmit("Baseline")}
-                disabled={submittingBaseline}
-                style={{ flex: 1 }}
-              >
-                {submittingBaseline ? "Uploading…" : "Submit Baseline"}
-              </button>
-            </div>
+            <button
+              className="btn primary"
+              onClick={() => handleSubmit("Baseline")}
+              disabled={submittingBaseline}
+            >
+              {submittingBaseline ? "Uploading…" : "Submit Baseline"}
+            </button>
           </div>
-          {/* Maintenance / Thermal Upload Card */}
-          <div className="upload-card">
-            <h4>
-              <span>🔥</span>Maintenance (Thermal)
-            </h4>
-            <div className="upload-label">Weather</div>
+          <div style={{ display: "grid", gap: 8, minWidth: 280 }}>
+            <label>
+              <strong>Maintenance</strong>
+            </label>
+            <label>Weather</label>
             <select
-              className="weather-select"
+              className="input"
               value={weatherThermal}
               onChange={(e) => setWeatherThermal(e.target.value as Weather)}
             >
-              <option value="SUNNY">Sunny ☀️</option>
-              <option value="CLOUDY">Cloudy ☁️</option>
-              <option value="RAINY">Rainy 🌧️</option>
+              <option value="SUNNY">Sunny</option>
+              <option value="CLOUDY">Cloudy</option>
+              <option value="RAINY">Rainy</option>
             </select>
-            <label
-              className={`file-input-wrapper ${
-                thermalDragActive ? "drag-active" : ""
-              }`}
-              onDragOver={(e) => {
-                e.preventDefault();
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                setThermalFile(f);
               }}
-              onDragEnter={(e) => {
-                e.preventDefault();
-                setThermalDragActive(true);
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                setThermalDragActive(false);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                setThermalDragActive(false);
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                  const f = e.dataTransfer.files[0];
-                  setThermalFile(f);
-                  e.dataTransfer.clearData();
-                }
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: 13 }}>
-                Click or Drag to Select
-              </div>
-              <div className="file-hint">JPEG / PNG / WEBP</div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setThermalFile(f);
-                }}
-              />
-            </label>
+            />
             {thermalFile && (
-              <div className="selected-file">
-                <strong>Selected:</strong> {thermalFile.name}
+              <div style={{ fontSize: 12, opacity: 0.8 }}>
+                Selected: <em>{thermalFile.name}</em>
               </div>
             )}
-            <div className="action-row">
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <button
                 className="btn primary"
                 onClick={() => handleSubmit("Thermal")}
                 disabled={submittingThermal}
-                style={{ flex: 1 }}
               >
                 {submittingThermal
                   ? "Uploading & Detecting"
                   : "Submit Maintenance"}
               </button>
               <button
-                className="button-primary-outline"
+                className="btn"
                 onClick={() => setShowRulesModal(true)}
                 aria-haspopup="dialog"
               >
@@ -3134,7 +3055,7 @@ export default function InspectionDetailPage() {
             }}
             onReject={(anomalyIdx) => {
               (async () => {
-                const userName = localStorage.getItem("userName") || "User";
+                const userName = username || localStorage.getItem("username") || "User";
                 const rejectedBox = thermalMeta.boxes?.find(
                   (b) => b.idx === anomalyIdx
                 );
@@ -3210,7 +3131,7 @@ export default function InspectionDetailPage() {
                   setFeedbackLog((prev) => [...prev, logData]);
                 }
                 // add to removedAnomalies so it persists in UI
-                const userName = localStorage.getItem("userName") || "User";
+                const userName = username || localStorage.getItem("username") || "User";
                 const updatedBox = {
                   ...boxToDelete,
                   rejectedBy: userName,
