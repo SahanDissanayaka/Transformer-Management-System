@@ -48,7 +48,7 @@ const Login: React.FC = () => {
           console.log("Auth state set with role:", userRole);
           // Delay to ensure localStorage is written
           setTimeout(() => {
-            window.location.href = "/";
+            window.location.href = "/transformers";
           }, 100);
         } else {
           console.log("Login failed:", response.responseDescription);

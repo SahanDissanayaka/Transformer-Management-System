@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from "react";
 import { createInspection, updateInspection } from "../api/inspectionDataApi";
 import { useAuth } from "../context/AuthContext";
