@@ -1,5 +1,6 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "../styles/InspectionDetail.css";
+import "../styles/LoadingSpinner.css";
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -3172,7 +3173,10 @@ export default function InspectionDetailPage() {
                 disabled={submittingBaseline}
                 style={{ flex: 1 }}
               >
-                {submittingBaseline ? "Uploading…" : "Submit Baseline"}
+                <span className="btn-loading">
+                  {submittingBaseline && <span className="spinner"></span>}
+                  {submittingBaseline ? "Uploading…" : "Submit Baseline"}
+                </span>
               </button>
             </div>
           </div>
@@ -3241,9 +3245,12 @@ export default function InspectionDetailPage() {
                 disabled={submittingThermal}
                 style={{ flex: 1 }}
               >
-                {submittingThermal
-                  ? "Uploading & Detecting"
-                  : "Submit Maintenance"}
+                <span className="btn-loading">
+                  {submittingThermal && <span className="spinner"></span>}
+                  {submittingThermal
+                    ? "Uploading & Detecting"
+                    : "Submit Maintenance"}
+                </span>
               </button>
               <button
                 className="button-primary-outline"
