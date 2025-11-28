@@ -12,4 +12,3 @@ torchvision>=0.15.0,<0.18
 
 # === JSON + utility libraries ===
 pillow>=9.0.0
-utlist
