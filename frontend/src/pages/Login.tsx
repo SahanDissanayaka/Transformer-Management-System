@@ -12,23 +12,51 @@ const Login: React.FC = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [usernameError, setUsernameError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   const { login } = useAuth();
+
+  const validateRegistration = (): boolean => {
+    setUsernameError("");
+    setPasswordError("");
+
+    // Check password minimum length
+    if (password.length < 8) {
+      setPasswordError("Password must be at least 8 characters long");
+      return false;
+    }
+
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setUsernameError("");
+    setPasswordError("");
     setIsLoading(true);
 
     try {
       if (isRegisterMode) {
-        // Register new user with role
+        // Validate before registration
+        if (!validateRegistration()) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Check if username already exists
         const response = await authApi.register({ username, password, role });
         if (response.responseCode == 2000) {
           setSuccess("Account created successfully! Please login.");
           setIsRegisterMode(false);
           setPassword("");
+          setUsername("");
+        } else if (response.responseCode === 400 || response.responseDescription?.includes("exists") || response.responseDescription?.includes("already")) {
+          setUsernameError("Username already exists. Please choose a different username.");
+          setError("Username already exists. Please choose a different username.");
         } else {
           setError(response.responseDescription || "Registration failed");
         }
@@ -59,10 +87,15 @@ const Login: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Login error:", err);
-      setError(
-        err.response?.data?.responseDescription ||
-          "An error occurred. Please try again."
-      );
+      
+      // Check if error is about duplicate username
+      const errorMsg = err.response?.data?.responseDescription || err.message || "An error occurred. Please try again.";
+      if (errorMsg.includes("exists") || errorMsg.includes("already") || errorMsg.includes("duplicate")) {
+        setUsernameError("Username already exists. Please choose a different username.");
+        setError("Username already exists. Please choose a different username.");
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -140,19 +173,48 @@ const Login: React.FC = () => {
                   placeholder="Enter your username"
                   disabled={isLoading}
                 />
+                {usernameError && <span className="error-text">{usernameError}</span>}
               </div>
 
               <div className="form-group">
                 <label htmlFor="password">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="Enter your password"
-                  disabled={isLoading}
-                />
+                <div className="password-input-wrapper">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="Enter your password"
+                    disabled={isLoading}
+                    minLength={isRegisterMode ? 8 : undefined}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    title={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+                        <path d="M17.94 17.94A10.97 10.97 0 0 1 12 20c-4.477 0-8.268-2.943-9.542-7a10.97 10.97 0 0 1 4.07-5.03" />
+                        <path d="M1 1l22 22" />
+                        <path d="M9.88 9.88A3 3 0 0 0 14.12 14.12" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                {isRegisterMode && password && password.length < 8 && (
+                  <span className="error-text">Password must be at least 8 characters long</span>
+                )}
+                {passwordError && <span className="error-text">{passwordError}</span>}
               </div>
 
               {isRegisterMode && (

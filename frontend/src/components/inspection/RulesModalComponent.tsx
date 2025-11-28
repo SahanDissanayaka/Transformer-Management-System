@@ -1,4 +1,5 @@
 import React from "react";
+import { useTheme } from "../../context/ThemeContext";
 
 interface RulesModalProps {
   isOpen: boolean;
@@ -21,7 +22,30 @@ export const RulesModal: React.FC<RulesModalProps> = ({
   rule3Enabled,
   onRule3Change,
 }) => {
+  const { theme } = useTheme();
+  
   if (!isOpen) return null;
+
+  const isDark = theme === 'dark';
+  
+  // Color scheme based on theme
+  const colors = {
+    overlay: isDark ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.3)",
+    background: isDark ? "rgba(20, 10, 50, 0.9)" : "#fff",
+    closeBtn: isDark ? "rgba(0, 212, 255, 0.15)" : "#f3f4f6",
+    closeBtnHover: isDark ? "rgba(0, 212, 255, 0.25)" : "#e5e7eb",
+    title: isDark ? "#00d4ff" : "#000",
+    subtitle: isDark ? "#a0a0c0" : "#6b7280",
+    text: isDark ? "#e0e0ff" : "#1f2937",
+    ruleLabel: isDark ? "#e0e0ff" : "#1f2937",
+    ruleToggleBg: isDark ? "rgba(0, 212, 255, 0.08)" : "#e6e7ea",
+    ruleToggleOn: isDark ? "#00d4ff" : "#5b21b6",
+    selectBg: isDark ? "rgba(30, 15, 60, 0.6)" : "#fff",
+    selectBorder: isDark ? "rgba(0, 212, 255, 0.3)" : "#eef2f7",
+    selectText: isDark ? "#e0e0ff" : "#000",
+    shadow: isDark ? "0 6px 18px rgba(0, 212, 255, 0.2)" : "0 6px 18px rgba(2,6,23,0.04)",
+    border: isDark ? "1px solid rgba(0, 212, 255, 0.2)" : "none",
+  };
 
   return (
     <div
@@ -32,7 +56,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
         inset: 0,
         display: "grid",
         placeItems: "center",
-        background: "rgba(0,0,0,0.3)",
+        background: colors.overlay,
         zIndex: 50,
       }}
     >
@@ -40,11 +64,12 @@ export const RulesModal: React.FC<RulesModalProps> = ({
         style={{
           width: 900,
           maxWidth: "95%",
-          background: "#fff",
+          background: colors.background,
           borderRadius: 14,
           padding: 28,
-          boxShadow: "0 20px 40px rgba(2,6,23,0.12)",
+          boxShadow: colors.shadow,
           position: "relative",
+          border: colors.border,
         }}
       >
         {/* close button top-right */}
@@ -59,17 +84,26 @@ export const RulesModal: React.FC<RulesModalProps> = ({
             height: 48,
             borderRadius: 12,
             border: "none",
-            background: "#f3f4f6",
+            background: colors.closeBtn,
             display: "grid",
             placeItems: "center",
-            boxShadow: "0 6px 18px rgba(2,6,23,0.06)",
+            boxShadow: colors.shadow,
             cursor: "pointer",
+            color: colors.text,
+            fontSize: 28,
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = colors.closeBtnHover;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = colors.closeBtn;
           }}
         >
           ×
         </button>
 
-        <h1 style={{ margin: 0, fontSize: 36, fontWeight: 700 }}>
+        <h1 style={{ margin: 0, fontSize: 36, fontWeight: 700, color: colors.title }}>
           Error Ruleset
         </h1>
         <div
@@ -82,11 +116,11 @@ export const RulesModal: React.FC<RulesModalProps> = ({
           }}
         >
           <div>
-            <h2 style={{ margin: "0 0 8px 0", fontSize: 24 }}>
+            <h2 style={{ margin: "0 0 8px 0", fontSize: 24, color: colors.title }}>
               Temperature Dereference
             </h2>
             <div
-              style={{ color: "#6b7280", fontSize: 16, marginBottom: 18 }}
+              style={{ color: colors.subtitle, fontSize: 16, marginBottom: 18 }}
             >
               Temperature deference between baseline and maintenance images.
             </div>
@@ -95,7 +129,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
               <div
                 style={{ display: "flex", alignItems: "center", gap: 12 }}
               >
-                <div style={{ fontWeight: 600, fontSize: 18 }}>Rule 2</div>
+                <div style={{ fontWeight: 600, fontSize: 18, color: colors.ruleLabel }}>Rule 2</div>
                 <div style={{ marginLeft: "auto" }}>
                   <div
                     onClick={() => onRule2Change(!rule2Enabled)}
@@ -105,9 +139,10 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                       width: 46,
                       height: 26,
                       borderRadius: 20,
-                      background: rule2Enabled ? "#5b21b6" : "#e6e7ea",
+                      background: rule2Enabled ? colors.ruleToggleOn : colors.ruleToggleBg,
                       position: "relative",
                       cursor: "pointer",
+                      transition: "background 0.2s ease",
                     }}
                   >
                     <div
@@ -125,12 +160,12 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                   </div>
                 </div>
               </div>
-              <div style={{ color: "#9CA3AF" }}>Rule Description</div>
+              <div style={{ color: colors.subtitle }}>Rule Description</div>
 
               <div
                 style={{ display: "flex", alignItems: "center", gap: 12 }}
               >
-                <div style={{ fontWeight: 600, fontSize: 18 }}>Rule 3</div>
+                <div style={{ fontWeight: 600, fontSize: 18, color: colors.ruleLabel }}>Rule 3</div>
                 <div style={{ marginLeft: "auto" }}>
                   <div
                     onClick={() => onRule3Change(!rule3Enabled)}
@@ -140,9 +175,10 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                       width: 46,
                       height: 26,
                       borderRadius: 20,
-                      background: rule3Enabled ? "#5b21b6" : "#e6e7ea",
+                      background: rule3Enabled ? colors.ruleToggleOn : colors.ruleToggleBg,
                       position: "relative",
                       cursor: "pointer",
+                      transition: "background 0.2s ease",
                     }}
                   >
                     <div
@@ -160,7 +196,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                   </div>
                 </div>
               </div>
-              <div style={{ color: "#9CA3AF" }}>Rule Description</div>
+              <div style={{ color: colors.subtitle }}>Rule Description</div>
             </div>
           </div>
 
@@ -175,13 +211,14 @@ export const RulesModal: React.FC<RulesModalProps> = ({
             <div
               style={{
                 width: "100%",
-                background: "#fff",
+                background: colors.selectBg,
                 borderRadius: 16,
                 padding: 18,
-                boxShadow: "0 6px 18px rgba(2,6,23,0.04)",
+                boxShadow: colors.shadow,
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
+                border: colors.selectBorder ? `1px solid ${colors.selectBorder}` : "none",
               }}
             >
               <select
@@ -190,8 +227,11 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                 style={{
                   padding: "10px 14px",
                   borderRadius: 12,
-                  border: "1px solid #eef2f7",
+                  border: `1px solid ${colors.selectBorder}`,
                   fontSize: 16,
+                  background: colors.selectBg,
+                  color: colors.selectText,
+                  cursor: "pointer",
                 }}
               >
                 <option>10%</option>
@@ -227,7 +267,9 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                 style={{
                   padding: "10px 18px",
                   borderRadius: 12,
-                  background: "#f8fafc",
+                  background: colors.selectBg,
+                  color: colors.text,
+                  border: `1px solid ${colors.selectBorder}`,
                 }}
               >
                 Cancel
