@@ -3543,6 +3543,14 @@ export default function InspectionDetailPage() {
                   setFeedbackLog((prev) => [...prev, logData]);
                 }
 
+                // Show success message
+                const successMsg = document.createElement("div");
+                successMsg.textContent = "✅ Anomaly updated successfully";
+                successMsg.style.cssText =
+                  "position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:12px 20px;border-radius:6px;z-index:9999;font-weight:bold;";
+                document.body.appendChild(successMsg);
+                setTimeout(() => successMsg.remove(), 2000);
+
                 setEditingBoxId(null);
                 setNewBoxCoords(null);
                 setAddDrawingActive(false);
@@ -3606,6 +3614,14 @@ export default function InspectionDetailPage() {
                       return [...prev, { ...updatedBox, idx: idxForClass } as Box];
                     });
                   }
+
+                  // Show success message
+                  const successMsg = document.createElement("div");
+                  successMsg.textContent = "✅ Anomaly rejected";
+                  successMsg.style.cssText =
+                    "position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:12px 20px;border-radius:6px;z-index:9999;font-weight:bold;";
+                  document.body.appendChild(successMsg);
+                  setTimeout(() => successMsg.remove(), 2000);
                 } catch (err) {
                   console.error(err);
                   // revert UI on failure
@@ -3659,6 +3675,14 @@ export default function InspectionDetailPage() {
                     });
                   }
                 }
+
+                // Show success message
+                const successMsg = document.createElement("div");
+                successMsg.textContent = "✅ Anomaly deleted";
+                successMsg.style.cssText =
+                  "position:fixed;top:20px;right:20px;background:#ef4444;color:white;padding:12px 20px;border-radius:6px;z-index:9999;font-weight:bold;";
+                document.body.appendChild(successMsg);
+                setTimeout(() => successMsg.remove(), 2000);
               } catch (err) {
                 console.error(err);
                 alert("Error deleting anomaly");
@@ -3700,9 +3724,9 @@ export default function InspectionDetailPage() {
             style={{
               padding: "8px 14px",
               borderRadius: 8,
-              border: "1px solid #e5e7eb",
-              background: "#f8fafc",
-              color: "#111827",
+              border: "1px solid rgba(0, 212, 255, 0.3)",
+              background: "rgba(0, 212, 255, 0.1)",
+              color: "var(--text)",
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -3719,14 +3743,16 @@ export default function InspectionDetailPage() {
                 flexWrap: "wrap",
               }}
             >
-              <label style={{ fontWeight: 600 }}>Error type:</label>
+              <label style={{ fontWeight: 600, color: "var(--text)" }}>Error type:</label>
               <select
                 value={newAnomalyClass}
                 onChange={(e) => setNewAnomalyClass(e.target.value)}
                 style={{
                   padding: "8px 10px",
                   borderRadius: 8,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid rgba(0, 212, 255, 0.3)",
+                  background: "rgba(0, 212, 255, 0.08)",
+                  color: "var(--text)",
                 }}
               >
                 {Object.keys(CLASS_COLORS)
@@ -3737,7 +3763,7 @@ export default function InspectionDetailPage() {
                     </option>
                   ))}
               </select>
-              <span style={{ color: "#64748b", fontSize: 13 }}>
+              <span style={{ color: "var(--muted)", fontSize: 13 }}>
                 {newAnomalyCoords
                   ? `(${newAnomalyCoords.map((v) => v.toFixed(3)).join(", ")})`
                   : "Draw a rectangle on the thermal image"}
@@ -3796,30 +3822,35 @@ export default function InspectionDetailPage() {
                   color: "#fff",
                   fontWeight: 700,
                   cursor: newAnomalyCoords ? "pointer" : "not-allowed",
+                  opacity: newAnomalyCoords ? 1 : 0.6,
                 }}
               >
-                Save
+                ✓ Confirm
               </button>
 
               <button
                 onClick={() => {
+                  if (editingBoxId !== null) {
+                    // Cancel edit mode
+                    setEditingBoxId(null);
+                  }
                   setAddDrawingActive(false);
                   setNewAnomalyCoords(null);
                 }}
                 style={{
                   padding: "8px 14px",
                   borderRadius: 8,
-                  border: "1px solid #e5e7eb",
-                  background: "#fff",
-                  color: "#64748b",
+                  border: "1px solid rgba(0, 212, 255, 0.3)",
+                  background: "rgba(0, 212, 255, 0.08)",
+                  color: "var(--text)",
                   fontWeight: 700,
                   cursor: "pointer",
                 }}
               >
-                Cancel
+                ✕ Cancel
               </button>
             </div>
-            <div style={{ color: "#64748b", fontSize: 13 }}>
+            <div style={{ color: "var(--muted)", fontSize: 13 }}>
               Tip: With drawing active, pan/zoom is disabled on the thermal
               image. Click and drag to draw the box.
             </div>
@@ -3836,10 +3867,10 @@ export default function InspectionDetailPage() {
               <div
                 key={box.idx}
                 style={{
-                  border: `2px solid #e5e7eb`,
+                  border: `2px solid rgba(0, 212, 255, 0.3)`,
                   borderRadius: 12,
                   padding: "14px 20px",
-                  background: "#f9fafb",
+                  background: "rgba(0, 212, 255, 0.08)",
                   opacity: 0.85,
                 }}
               >
@@ -3873,6 +3904,7 @@ export default function InspectionDetailPage() {
                         fontWeight: 600,
                         fontSize: 14,
                         marginBottom: 2,
+                        color: "var(--text)",
                       }}
                     >
                       {box.klass}
@@ -3883,7 +3915,7 @@ export default function InspectionDetailPage() {
                         alignItems: "center",
                         gap: 6,
                         fontSize: 12,
-                        color: "#64748b",
+                        color: "var(--muted)",
                       }}
                     >
                       <span>
@@ -3903,23 +3935,23 @@ export default function InspectionDetailPage() {
                       borderRadius: 4,
                       fontSize: 12,
                       fontWeight: 600,
-                      background: "#fee2e2",
-                      color: "#991b1b",
+                      background: "rgba(239, 68, 68, 0.2)",
+                      color: "rgba(239, 68, 68, 1)",
                     }}
                   >
                     Rejected
                   </div>
                 </div>
-                <div style={{ fontSize: 13, color: "#64748b", marginTop: 8 }}>
+                <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>
                   <div>
                     BBox: ({box.n[0].toFixed(3)}, {box.n[1].toFixed(3)}) — (
                     {box.n[2].toFixed(3)}, {box.n[3].toFixed(3)})
                   </div>
                   <div style={{ marginTop: 4 }}>
-                    Rejected by: <strong>{box.rejectedBy}</strong>
+                    Rejected by: <strong style={{ color: "var(--text)" }}>{box.rejectedBy}</strong>
                   </div>
                   <div style={{ marginTop: 2 }}>
-                    Rejected at: <strong>{box.rejectedAt}</strong>
+                    Rejected at: <strong style={{ color: "var(--text)" }}>{box.rejectedAt}</strong>
                   </div>
                 </div>
               </div>
