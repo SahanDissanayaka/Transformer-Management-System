@@ -1,8 +1,17 @@
-numpy==1.26.4
-opencv-python==4.7.0.72
-matplotlib==3.7.1
-ultralytics==8.3.12
-torch==2.0.1
-torchvision==0.15.2
-pillow
-psutil
+# numpy==1.26.4
+# opencv-python==4.7.0.72
+# matplotlib==3.7.1
+# ultralytics==8.3.12
+# torch==2.0.1
+# torchvision==0.15.2
+# pillow
+# psutil
+
+# Core numeric + image utilities
+numpy>=1.24,<2.0
+opencv-python>=4.7,<5.0
+pillow>=9.0,<11.0
+
+# YOLO + deep learning
+ultralytics>=8.0,<9.0
+torch>=2.0,<3.0
