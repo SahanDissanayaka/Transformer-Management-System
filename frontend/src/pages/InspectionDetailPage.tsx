@@ -3315,98 +3315,107 @@ export default function InspectionDetailPage() {
         <div className="card" style={{ marginTop: 16 }}>
           <h3 style={{ marginTop: 0 }}>Removed Anomalies</h3>
           <div style={{ display: "grid", gap: 8 }}>
-            {removedAnomalies.map((box) => (
-              <div
-                key={box.idx}
-                style={{
-                  border: `2px solid #e5e7eb`,
-                  borderRadius: 12,
-                  padding: "14px 20px",
-                  background: "#f9fafb",
-                  opacity: 0.85,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    marginBottom: 8,
-                  }}
-                >
+            {(() => {
+              // compute per-type sequential numbering for removed anomalies
+              const typeCounts: Record<string, number> = {};
+              return removedAnomalies.map((box, i) => {
+                const t = box.klass || "Unknown";
+                typeCounts[t] = (typeCounts[t] || 0) + 1;
+                const displayNumber = typeCounts[t];
+                return (
                   <div
+                    key={box.n ? box.n.join(",") : `${box.idx}-${i}`}
                     style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      background: box.color,
-                      display: "grid",
-                      placeItems: "center",
-                      color: "#fff",
-                      fontWeight: 700,
-                      fontSize: 14,
-                      flexShrink: 0,
+                      border: `2px solid #e5e7eb`,
+                      borderRadius: 12,
+                      padding: "14px 20px",
+                      background: "#f9fafb",
+                      opacity: 0.85,
                     }}
                   >
-                    {box.idx}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        fontSize: 14,
-                        marginBottom: 2,
-                      }}
-                    >
-                      {box.klass}
-                    </div>
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 6,
-                        fontSize: 12,
-                        color: "#64748b",
+                        gap: 10,
+                        marginBottom: 8,
                       }}
                     >
-                      <span>
-                        {box.aiDetected === false
-                          ? "Not AI Detected"
-                          : "AI Detection"}
-                      </span>
-                      {box.aiDetected === false ? null : <span>•</span>}
-                      {box.aiDetected === false ? null : (
-                        <span>{(box.conf * 100).toFixed(0)}% confidence</span>
-                      )}
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: "50%",
+                          background: box.color,
+                          display: "grid",
+                          placeItems: "center",
+                          color: "#fff",
+                          fontWeight: 700,
+                          fontSize: 14,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {displayNumber}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            fontSize: 14,
+                            marginBottom: 2,
+                          }}
+                        >
+                          {box.klass}
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            fontSize: 12,
+                            color: "#64748b",
+                          }}
+                        >
+                          <span>
+                            {box.aiDetected === false
+                              ? "Not AI Detected"
+                              : "AI Detection"}
+                          </span>
+                          {box.aiDetected === false ? null : <span>•</span>}
+                          {box.aiDetected === false ? null : (
+                            <span>{(box.conf * 100).toFixed(0)}% confidence</span>
+                          )}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          padding: "3px 10px",
+                          borderRadius: 4,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          background: "#fee2e2",
+                          color: "#991b1b",
+                        }}
+                      >
+                        Rejected
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 13, color: "#64748b", marginTop: 8 }}>
+                      <div>
+                        BBox: ({box.n[0].toFixed(3)}, {box.n[1].toFixed(3)}) — (
+                        {box.n[2].toFixed(3)}, {box.n[3].toFixed(3)})
+                      </div>
+                      <div style={{ marginTop: 4 }}>
+                        Rejected by: <strong>{box.rejectedBy}</strong>
+                      </div>
+                      <div style={{ marginTop: 2 }}>
+                        Rejected at: <strong>{box.rejectedAt}</strong>
+                      </div>
                     </div>
                   </div>
-                  <div
-                    style={{
-                      padding: "3px 10px",
-                      borderRadius: 4,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      background: "#fee2e2",
-                      color: "#991b1b",
-                    }}
-                  >
-                    Rejected
-                  </div>
-                </div>
-                <div style={{ fontSize: 13, color: "#64748b", marginTop: 8 }}>
-                  <div>
-                    BBox: ({box.n[0].toFixed(3)}, {box.n[1].toFixed(3)}) — (
-                    {box.n[2].toFixed(3)}, {box.n[3].toFixed(3)})
-                  </div>
-                  <div style={{ marginTop: 4 }}>
-                    Rejected by: <strong>{box.rejectedBy}</strong>
-                  </div>
-                  <div style={{ marginTop: 2 }}>
-                    Rejected at: <strong>{box.rejectedAt}</strong>
-                  </div>
-                </div>
-              </div>
-            ))}
+                );
+              });
+            })()}
           </div>
         </div>
       )}
