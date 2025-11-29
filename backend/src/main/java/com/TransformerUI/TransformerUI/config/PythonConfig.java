@@ -13,6 +13,6 @@ public class PythonConfig {
     @PostConstruct
     public void setPythonPath() {
         System.setProperty("python.exec", pythonExec);
-        System.out.println("✅ Python executable set to: " + pythonExec);
+        System.out.println("Python executable set to: " + pythonExec);
     }
 }
